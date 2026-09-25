@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AlgoPlayground</title>
+    <meta
+      name="description"
+      content=""
+      Interactive
+      DSA
+      visualizer
+      built
+      from
+      scratch
+    />
+    <style>
+      /* 3. CSS Custom Properties - our single source of truth for colors */
+      :root {
+        --bg: #fafafa; /* light background */
+        --text: #222222; /* dark text for readability */
+        --accent: #0066ff;
+        --gray: #888888;
+        --border: #dddddd;
+      }
+      /* Dark mode - just flip these vairables later */
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #121212;
+          --text: #e0e0e0;
+          --accent: #4d94ff;
+          --gray: #aaaaaa;
+          --border: #333333;
+        }
+      }
+      /* 1. Ultra-minimal reset - removes browser defaults */
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      /* 2. Make the page fill the viewport and use smooth scrolling */
+      html {
+        scroll-behavior: smooth;
+        font-size: 16px;
+      } /* base font size -easy to calculate rem later */
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh; /* always at least full screen heigth */
+        font-family: system-ui, -apple-system, sans-serif;
+        line-height: 1.5;
+        background: var(--bg);
+        color: var(--text);
+      }
+      header {
+        padding: 2rem 1rem;
+        text-align: center;
+        background: var(--accent);
+        color: white;
+      }
+      header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+      }
+      header p {
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+      }
+      main {
+        flex: 1;
+        padding: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      footer {
+        padding: 1rem;
+        text-align: center;
+        font-size: 0.9rem;
+        color: var(--gray);
+        border-top: 1px solid var(--border);
+      }
+      /* --- Control Panel --- */
+      aside#controls {
+        padding: 1.5rem;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px); /* frosted glass effect */
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      @media (prefers-color-scheme: dark) {
+        aside#controls {
+          background: rgba(0, 0, 0, 0.7);
+        }
+      }
+
+      aside#controls section {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+      aside#controls section:last-child {
+        margin-bottom: 0;
+      }
+      /* Keep each label + slider on the same line even on tiny screens */
+      .control-group {
+        flex: 1;
+        min-width: 280px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      button,
+      select,
+      input[type="range"] {
+        border-radius: 0.75rem; /* soft, modern corners */
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12); /* subtle depth */
+        transition: all 0.18s ease;
+        font: inherit;
+        padding: 0.6rem 1rem;
+        border: none;
+        background: var(--accent);
+        color: white;
+        cursor: pointer;
+      }
+
+      button:hover,
+      select:hover {
+        transform: translateY(-2px); /* tiny lift on hover */
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+        opacity: 0.9;
+      }
+      input[type="range"] {
+        flex: 1;
+        min-width: 200px;
+        accent-color: var(--accent);
+      }
+      label {
+        font-weight: 600;
+        min-width: 140px;
+      }
+      select {
+        background: var(--bg);
+        color: var(--text);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>AlgoPlayground</h1>
+      <p>Interactive DSA Visualizer - built from scratch</p>
+    </header>
+    <aside id="controls">
+      <section>
+        <button id="new-array">New Array</button>
+        <button id="play-pause">Play</button>
+        <button id="step">Step</button>
+      </section>
+      <section>
+        <div class="control-group">
+          <label for="speed">Speed: <span id="speed-value">50</span>%</label>
+          <input type="range" id="speed" min="1" max="100" value="50" />
+        </div>
+        <div class="control-group">
+          <label for="size">Array Size: <span id="size-value">30</span></label>
+          <input
+            type="range"
+            id="size"
+            min="10"
+            max="100"
+            value="30"
+            step="5"
+          />
+        </div>
+      </section>
+      <section>
+        <label for="algorithm">Algorithm:</label>
+        <select id="algorithm">
+          <option value="bubble">Bubble Sort</option>
+          <option value="selection">Selection Sort</option>
+          <option value="insertion">Insertion Sort</option>
+          <option disabled>-- More coming soon --</option>
+        </select>
+      </section>
+    </aside>
+    <main id="visualizer">
+      <!-- Algorithm bars, trees, graphs will appear here -->
+    </main>
+    <footer>
+      <small>Step 1 complete - layout ready</small>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,194 @@
+/* Expand content width + pin navigation to the far left
+   Compatible with: default mkdocs, mkdocs-material, ReadTheDocs-ish themes.
+   Put this file at docs/styles/extra.css and enable via mkdocs.yml -> extra_css.
+*/
+
+/* -----------------------
+   THEME-SPECIFIC SIDEBAR RULES
+   ----------------------- */
+
+/* mkdocs-material (modern) */
+.md-nav {
+  position: fixed !important;
+  left: 0 !important;
+  top: 0 !important;
+  height: 100vh !important;
+  width: 260px !important; /* sidebar width */
+  overflow: auto !important;
+  z-index: 50 !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.06) !important;
+  background: var(--md-default-fg-color, #fff) !important;
+}
+
+/* default mkdocs */
+.md-sidebar {
+  position: fixed !important;
+  left: 0 !important;
+  top: 0 !important;
+  height: 100vh !important;
+  width: 260px !important;
+  overflow: auto !important;
+  z-index: 50 !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.06) !important;
+  background: #fff !important;
+}
+
+/* readthedocs-ish structures: project nav class variations */
+.wy-nav-side,                 /* RTD classic */
+.rst-sidebar {
+  position: fixed !important;
+  left: 0 !important;
+  top: 0 !important;
+  height: 100vh !important;
+  width: 260px !important;
+  overflow: auto !important;
+  z-index: 50 !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.06) !important;
+  background: #fff !important;
+}
+
+/* -----------------------
+   MAIN CONTENT: make room for fixed sidebar
+   ----------------------- */
+
+/* mkdocs-material main wrapper */
+.md-main__inner,
+.md-main,
+.md-content {
+  margin-left: 280px !important; /* sidebar (260) + gap (20) */
+  max-width: 1200px !important;
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+}
+
+/* default mkdocs main content */
+.content,                      /* common generic container */
+.md-typeset,
+.main {
+  margin-left: 280px !important;
+  max-width: 1200px !important;
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+}
+
+/* ReadTheDocs main container */
+.document,
+.wy-nav-content {
+  margin-left: 280px !important;
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+  max-width: 1200px !important;
+}
+
+/* Constrain measure for readable line length */
+.md-typeset,
+.article,
+.rst-content,
+.wy-side-nav-search {
+  max-width: 80ch !important;
+}
+
+/* -----------------------
+   HEADER / TOPBAR alignment when sidebar fixed
+   ----------------------- */
+
+/* mkdocs-material header */
+.md-header {
+  left: 260px !important;
+  right: 0 !important;
+  width: auto !important;
+  z-index: 60 !important;
+}
+
+/* default mkdocs header */
+.header {
+  margin-left: 260px !important;
+}
+
+/* ReadTheDocs header alignment */
+.wy-nav-top {
+  left: 260px !important;
+  right: 0 !important;
+}
+
+/* -----------------------
+   DENSITY and NAV ITEM TUNING
+   ----------------------- */
+
+/* make nav items slightly denser across themes */
+.md-nav__item,
+.md-nav__title,
+.md-sidebar .nav,
+.wy-side-nav-search li,
+.rst-sidebar li {
+  padding-top: 0.35rem !important;
+  padding-bottom: 0.35rem !important;
+}
+
+/* reduce nested indent visual bulk */
+.md-nav .md-nav__item .md-nav__item,
+.wy-nav-side .toctree-l1 .toctree-l2 {
+  padding-left: 0.5rem !important;
+}
+
+/* -----------------------
+   MOBILE / SMALL SCREENS (restore normal stacked layout)
+   ----------------------- */
+
+@media (max-width: 900px) {
+  /* Allow sidebar to flow above content */
+  .md-nav,
+  .md-sidebar,
+  .wy-nav-side,
+  .rst-sidebar {
+    position: relative !important;
+    width: auto !important;
+    height: auto !important;
+    border-right: none !important;
+  }
+
+  .md-main__inner,
+  .md-main,
+  .content,
+  .document,
+  .wy-nav-content {
+    margin-left: 0 !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .md-header,
+  .header,
+  .wy-nav-top {
+    left: 0 !important;
+  }
+}
+
+/* -----------------------
+   VISUAL DEBUG HELPERS (optional; comment out in final)
+   ----------------------- */
+/*
+.md-nav, .md-sidebar, .wy-nav-side, .rst-sidebar {
+  outline: 1px dashed rgba(255,0,0,0.1) !important;
+}
+.md-main__inner, .content, .wy-nav-content {
+  outline: 1px dashed rgba(0,0,255,0.05) !important;
+}
+*/
+
+body > div.container {
+  padding: 0 !important;
+  gap: 3 !important;
+  padding-right: 5px !important;
+  padding-left: 5px !important;
+  max-width: 95vw !important;
+}
+body > div.container > div > div.col-md-9 > pre {
+  font-size: 1.2em;
+}
+body {
+  font-size: 1.1em;
+}
+body > div.container > div > div.col-md-9 > pre > code {
+  font-size: 1.2em;
+}

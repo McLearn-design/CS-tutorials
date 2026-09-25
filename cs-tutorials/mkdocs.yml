@@ -1,0 +1,16 @@
+site_name: My Docs
+
+nav:
+  - Home: index.md
+  - J4S: java-4-spring.md
+  - CS:
+      pre-propmt: ./cs/pre-prompt.md
+      prompt: ./cs/prompts.md
+      prompts:
+        - 0.1F: ./cs/prompts/0.1F.md
+
+  - Security:
+      Java: java-responses.md
+
+extra_css:
+  - ./styles/extra.css
