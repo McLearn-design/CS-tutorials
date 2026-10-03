@@ -1,0 +1,123 @@
+{
+  "id": "found-functions",
+  "title": "Functions, headers and your first unit tests",
+  "summary": "Move the calculator's logic into functions in their own files, then prove they work with automated tests — and use a failing test to drive a change.",
+  "mode": "incremental",
+  "project": "calculator",
+  "concepts": ["function", "parameter", "return value", "header", "declaration vs definition", "unit test", "test target", "exception", "test-driven development"],
+  "prerequisites": ["found-values"],
+  "intro": "intro.md",
+  "build": {
+    "default": "calculator",
+    "targets": {
+      "calculator": { "system": "cmake", "output": "calculator" },
+      "tests": { "system": "cmake", "output": "calc_tests" }
+    }
+  },
+  "files": [
+    { "path": "main.cpp", "from": "../found-values/solution/choose-op/main.cpp" }
+  ],
+  "steps": [
+    {
+      "id": "declare",
+      "title": "Declare an interface",
+      "kind": "code",
+      "content": "steps/01-declare.md",
+      "open": ["calc.h"],
+      "checks": [
+        { "type": "fileExists", "path": "calc.h" },
+        { "type": "source", "path": "calc.h", "pattern": "#\\s*pragma\\s+once", "label": "calc.h has #pragma once" },
+        { "type": "source", "path": "calc.h", "pattern": "double\\s+add\\s*\\(\\s*double\\b[^,]*,\\s*double\\b[^)]*\\)\\s*;", "label": "declares double add(double, double);" },
+        { "type": "source", "path": "calc.h", "pattern": "double\\s+subtract\\s*\\(\\s*double\\b[^,]*,\\s*double\\b[^)]*\\)\\s*;", "label": "declares subtract" },
+        { "type": "source", "path": "calc.h", "pattern": "double\\s+multiply\\s*\\(\\s*double\\b[^,]*,\\s*double\\b[^)]*\\)\\s*;", "label": "declares multiply" },
+        { "type": "source", "path": "calc.h", "pattern": "double\\s+divide\\s*\\(\\s*double\\b[^,]*,\\s*double\\b[^)]*\\)\\s*;", "label": "declares divide" }
+      ],
+      "hints": ["One line per function: `double add(double a, double b);` — note the semicolon and the absence of a body."],
+      "solution": "solution/declare"
+    },
+    {
+      "id": "define",
+      "title": "Define it, use it",
+      "kind": "code",
+      "content": "steps/02-define.md",
+      "open": ["calc.cpp", "main.cpp", "CMakeLists.txt"],
+      "checks": [
+        { "type": "fileExists", "path": "calc.cpp" },
+        { "type": "source", "path": "main.cpp", "pattern": "#\\s*include\\s*\"calc\\.h\"", "label": "main.cpp includes \"calc.h\"" },
+        { "type": "source", "path": "main.cpp", "pattern": "\\b(add|subtract|multiply|divide)\\s*\\(", "label": "main.cpp calls the new functions" },
+        { "type": "compiles", "noWarnings": true },
+        { "type": "output", "stdin": "3 * 4\n", "expect": { "contains": "3 * 4 = 12" } },
+        { "type": "output", "stdin": "10 / 4\n", "expect": { "contains": "10 / 4 = 2.5" } },
+        { "type": "output", "stdin": "1 / 0\n", "expect": { "contains": "Error: division by zero" } },
+        { "type": "output", "stdin": "2 % 3\n", "expect": { "contains": "Unknown operator: %" } }
+      ],
+      "hints": [
+        "calc.cpp starts with `#include \"calc.h\"` and then has the four functions *with* bodies.",
+        "Linker error `undefined reference to add(double, double)`? CMake doesn't know about calc.cpp: `add_executable(calculator main.cpp calc.cpp)`."
+      ],
+      "solution": "solution/define"
+    },
+    {
+      "id": "first-test",
+      "title": "A test program",
+      "kind": "code",
+      "content": "steps/03-first-test.md",
+      "files": [
+        { "path": "tests/studio_test.hpp", "from": "shared:studio_test.hpp" },
+        { "path": "tests/test_main.cpp", "from": "shared:test_main.cpp" },
+        { "path": "tests/calc_test.cpp", "from": "starter/calc_test.cpp" }
+      ],
+      "open": ["tests/calc_test.cpp", "CMakeLists.txt"],
+      "commands": ["cmake --build build", "./build/calc_tests", "ctest --test-dir build --output-on-failure"],
+      "checks": [
+        { "type": "source", "path": "CMakeLists.txt", "pattern": "add_executable\\s*\\(\\s*calc_tests\\b", "label": "CMakeLists.txt defines a calc_tests target", "stripComments": true },
+        { "type": "tests", "target": "tests", "minTests": 1 },
+        { "type": "compiles", "noWarnings": true }
+      ],
+      "hints": [
+        "`add_executable(calc_tests tests/test_main.cpp tests/calc_test.cpp calc.cpp)`",
+        "`fatal error: calc.h: No such file or directory`? The test lives in `tests/`, calc.h in the project root. `target_include_directories(calc_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})`."
+      ],
+      "solution": "solution/first-test"
+    },
+    {
+      "id": "more-tests",
+      "title": "Test every function",
+      "kind": "code",
+      "content": "steps/04-more-tests.md",
+      "open": ["tests/calc_test.cpp"],
+      "checks": [
+        { "type": "source", "path": "tests/calc_test.cpp", "pattern": "\\bsubtract\\s*\\(", "label": "There is a test that calls subtract" },
+        { "type": "source", "path": "tests/calc_test.cpp", "pattern": "\\bmultiply\\s*\\(", "label": "There is a test that calls multiply" },
+        { "type": "source", "path": "tests/calc_test.cpp", "pattern": "\\bdivide\\s*\\(", "label": "There is a test that calls divide" },
+        { "type": "tests", "target": "tests", "minTests": 4 }
+      ],
+      "hints": [
+        "Copy the shape of the existing test: `TEST(some_descriptive_name) { CHECK_EQ(actual, expected); }`",
+        "For floating-point results that aren't exact, use `CHECK_NEAR(divide(1, 3), 0.3333333, 1e-6);`"
+      ],
+      "solution": "solution/more-tests"
+    },
+    {
+      "id": "throw",
+      "title": "Red, green: a test drives a change",
+      "kind": "code",
+      "content": "steps/05-throw.md",
+      "open": ["tests/calc_test.cpp", "calc.cpp", "main.cpp"],
+      "checks": [
+        { "type": "source", "path": "tests/calc_test.cpp", "pattern": "CHECK_THROWS\\s*\\(\\s*divide\\s*\\(", "label": "A test checks that divide throws" },
+        { "type": "source", "path": "calc.cpp", "pattern": "\\bthrow\\b", "label": "divide throws an exception" },
+        { "type": "tests", "target": "tests", "minTests": 5 },
+        { "type": "compiles", "noWarnings": true },
+        { "type": "output", "stdin": "1 / 0\n", "expect": { "contains": "Error: division by zero" } },
+        { "type": "output", "stdin": "9 / 3\n", "expect": { "contains": "9 / 3 = 3" } }
+      ],
+      "hints": [
+        "Test: `TEST(divide_by_zero_throws) { CHECK_THROWS(divide(1, 0), std::invalid_argument); }` — add `#include <stdexcept>`.",
+        "In divide: `if (b == 0) throw std::invalid_argument(\"division by zero\");`",
+        "In main: wrap the calculation in `try { ... } catch (const std::invalid_argument& e) { std::cout << \"Error: \" << e.what() << '\\n'; }`"
+      ],
+      "solution": "solution/throw"
+    }
+  ]
+}

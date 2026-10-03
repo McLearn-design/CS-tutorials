@@ -1,0 +1,199 @@
+{
+  "id": "env-first-program",
+  "title": "From a text file to a running program",
+  "summary": "Create a real C++ source file, compile it with a real compiler, and see every stage between your text and an executable.",
+  "mode": "guided",
+  "project": "hello",
+  "concepts": [
+    "source file",
+    "compiler",
+    "main()",
+    "exit code",
+    "#include",
+    "std::cout",
+    "preprocessor",
+    "object file",
+    "linker"
+  ],
+  "prerequisites": [],
+  "intro": "intro.md",
+  "build": {
+    "targets": {
+      "hello": {
+        "system": "direct",
+        "sources": [
+          "hello.cpp"
+        ],
+        "output": "hello"
+      }
+    }
+  },
+  "steps": [
+    {
+      "id": "create-file",
+      "title": "Create a source file",
+      "kind": "code",
+      "content": "steps/01-create-file.md",
+      "checks": [
+        {
+          "type": "fileExists",
+          "path": "hello.cpp",
+          "failMessage": "There is no file called hello.cpp in projects/hello/ yet. Check the spelling and the folder."
+        }
+      ],
+      "hints": [
+        "In VS Code: right-click the `hello` folder in the Explorer and choose **New File**. In a terminal: `touch hello.cpp` (macOS/Linux) or `ni hello.cpp` (PowerShell).",
+        "The file must be directly inside `projects/hello/`, not in a sub-folder."
+      ],
+      "solution": "solution/create-file"
+    },
+    {
+      "id": "main",
+      "title": "The smallest program",
+      "kind": "code",
+      "content": "steps/02-main.md",
+      "open": [
+        "hello.cpp"
+      ],
+      "checks": [
+        {
+          "type": "source",
+          "path": "hello.cpp",
+          "pattern": "\\bint\\s+main\\s*\\(",
+          "label": "hello.cpp defines int main()",
+          "failMessage": "The program needs a function called main that returns int: `int main() { ... }`."
+        },
+        {
+          "type": "compiles"
+        },
+        {
+          "type": "output",
+          "expect": {
+            "equals": ""
+          },
+          "exitCode": 0,
+          "label": "Program runs and exits with code 0"
+        }
+      ],
+      "hints": [
+        "A function is: return type, name, parameter list in `( )`, body in `{ }`.",
+        "Type exactly:\n\n```cpp\nint main()\n{\n    return 0;\n}\n```"
+      ],
+      "solution": "solution/main"
+    },
+    {
+      "id": "hello",
+      "title": "Say something",
+      "kind": "code",
+      "content": "steps/03-hello.md",
+      "open": [
+        "hello.cpp"
+      ],
+      "checks": [
+        {
+          "type": "source",
+          "path": "hello.cpp",
+          "pattern": "#\\s*include\\s*<iostream>",
+          "label": "hello.cpp includes <iostream>"
+        },
+        {
+          "type": "compiles"
+        },
+        {
+          "type": "output",
+          "expect": {
+            "equals": "Hello C++"
+          }
+        }
+      ],
+      "hints": [
+        "`#include <iostream>` goes at the very top of the file, before `int main()`.",
+        "Inside main, before `return 0;`: `std::cout << \"Hello C++\\n\";`",
+        "Capital H, capital C, a space, two plus signs. The checker ignores the trailing newline."
+      ],
+      "solution": "solution/hello"
+    },
+    {
+      "id": "pipeline",
+      "title": "Run the compiler yourself, one stage at a time",
+      "kind": "terminal",
+      "content": "steps/04-pipeline.md",
+      "commands": [
+        "g++ -std=c++20 -E hello.cpp -o hello.ii",
+        "g++ -std=c++20 -c hello.cpp -o hello.o",
+        "g++ hello.o -o hello",
+        "./hello"
+      ],
+      "checks": [
+        {
+          "type": "fileExists",
+          "path": "hello.ii",
+          "label": "Preprocessed output hello.ii exists"
+        },
+        {
+          "type": "fileExists",
+          "path": "hello.o",
+          "label": "Object file hello.o exists"
+        },
+        {
+          "type": "fileExists",
+          "path": "hello",
+          "executable": true,
+          "label": "Linked executable exists"
+        }
+      ],
+      "hints": [
+        "Open a terminal **in the project folder** (`projects/hello`). In VS Code the C++ Studio panel has an *Open Terminal* button that does this.",
+        "Using clang? Replace `g++` with `clang++` \u2014 the flags are the same. On Windows with MSVC, see the table at the bottom of the step."
+      ]
+    },
+    {
+      "id": "why-so-big",
+      "title": "Why is hello.ii so big?",
+      "kind": "quiz",
+      "content": "steps/05-why-so-big.md",
+      "quiz": {
+        "question": "Your source file is about 7 lines, but hello.ii is tens of thousands of lines. Why?",
+        "options": [
+          "The compiler adds debugging information to the file.",
+          "The preprocessor replaced `#include <iostream>` with the entire contents of the iostream header \u2014 and every header it includes.",
+          "hello.ii contains the machine code for your program.",
+          "The preprocessor copies the whole C++ standard library into every program."
+        ],
+        "answer": 1,
+        "explanations": [
+          "Debug information is produced by the compiler (`-g`) and lives in the object file and executable, not in the preprocessed text.",
+          "Exactly. `#include` is textual copy-and-paste. The compiler proper never sees `#include` \u2014 it sees one enormous translation unit. This is why big projects care about include hygiene and build times, and one of the reasons C++20 introduced modules.",
+          "Machine code is produced later, by the compiler (into hello.o). hello.ii is still C++ source text \u2014 open it and look!",
+          "Close, but only the headers you include (and the headers *they* include) are pasted in \u2014 not the whole library. Most of the library's compiled code lives in a separate library the linker uses."
+        ]
+      }
+    },
+    {
+      "id": "challenge",
+      "title": "Challenge: two lines",
+      "kind": "challenge",
+      "content": "steps/06-challenge.md",
+      "open": [
+        "hello.cpp"
+      ],
+      "checks": [
+        {
+          "type": "compiles",
+          "noWarnings": true
+        },
+        {
+          "type": "output",
+          "expect": {
+            "equals": "Hello C++\nI compiled this myself"
+          }
+        }
+      ],
+      "hints": [
+        "`\\n` inside a string literal is a newline character.",
+        "You can chain: `std::cout << \"first\\n\" << \"second\\n\";` or use two separate statements."
+      ],
+      "solution": "solution/challenge"
+    }
+  ]
+}

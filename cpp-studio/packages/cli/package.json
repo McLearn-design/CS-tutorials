@@ -1,0 +1,9 @@
+{
+  "name": "@cpp-studio/cli",
+  "version": "0.1.0",
+  "description": "Terminal front end for the C++ Studio learning engine.",
+  "bin": { "cpp-studio": "dist/main.js" },
+  "main": "dist/main.js",
+  "dependencies": { "@cpp-studio/engine": "0.1.0" },
+  "license": "MIT"
+}

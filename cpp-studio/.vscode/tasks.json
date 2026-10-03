@@ -1,0 +1,11 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build-cpp-studio",
+      "type": "shell",
+      "command": "npm run build && node -e \"require('fs').mkdirSync('workspace',{recursive:true})\"",
+      "problemMatcher": "$tsc"
+    }
+  ]
+}

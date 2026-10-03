@@ -1,0 +1,158 @@
+{
+  "id": "env-diagnostics",
+  "title": "Reading what the compiler tells you",
+  "summary": "Errors and warnings are information, not punishment. Learn to read compiler and linker diagnostics, find the real cause, and fix it.",
+  "mode": "guided",
+  "project": "diagnostics",
+  "concepts": ["compiler error", "warning", "declaration", "scope", "signed/unsigned", "linker error", "definition"],
+  "prerequisites": ["env-first-program"],
+  "intro": "intro.md",
+  "build": {
+    "default": "greet",
+    "targets": {
+      "greet": { "system": "direct", "sources": ["greet.cpp"], "output": "greet" },
+      "count": { "system": "direct", "sources": ["count.cpp"], "output": "count" },
+      "shapes": { "system": "direct", "sources": ["shapes.cpp", "area.cpp"], "output": "shapes" }
+    }
+  },
+  "files": [
+    { "path": "greet.cpp", "from": "starter/greet.cpp" }
+  ],
+  "steps": [
+    {
+      "id": "first-error",
+      "title": "Read the first error",
+      "kind": "quiz",
+      "content": "steps/01-first-error.md",
+      "open": ["greet.cpp"],
+      "commands": ["g++ -std=c++20 -Wall -Wextra greet.cpp -o greet"],
+      "quiz": {
+        "question": "GCC reports `greet.cpp:6:34: error: expected ';' before '}' token` (Clang: `expected ';' after return statement`). What is the fix?",
+        "options": [
+          "Add a `;` after the closing `}` of the greeting function on line 7.",
+          "Add a `;` at the end of the return statement on line 6, after `\"!\"`.",
+          "Remove the `}` on line 7.",
+          "Add `#include <string>` — the compiler does not know what a string is."
+        ],
+        "answer": 1,
+        "explanations": [
+          "Function bodies don't end with `;`. The compiler is telling you it reached the `}` while still expecting the end of the *previous* statement.",
+          "Right. `6:34` means line 6, column 34 — the end of the return statement. The compiler only realised something was missing when it saw the next token, `}`. With errors like this, always look *just before* the reported position.",
+          "The `}` is correct: it closes the function body. The compiler mentions it only because it is the token it found instead of `;`.",
+          "`<string>` is already included on line 2. Read the message literally: it expected a `;`."
+        ]
+      }
+    },
+    {
+      "id": "fix-semicolon",
+      "title": "Fix it",
+      "kind": "code",
+      "content": "steps/02-fix-semicolon.md",
+      "open": ["greet.cpp"],
+      "checks": [
+        { "type": "diagnostics", "absent": "expected ';'|expected ‘;’", "label": "The missing-semicolon error is gone" }
+      ],
+      "hints": ["Line 6 should end with `\"!\";`"],
+      "solution": "solution/fix-semicolon"
+    },
+    {
+      "id": "undeclared",
+      "title": "One fix reveals the next",
+      "kind": "quiz",
+      "content": "steps/03-undeclared.md",
+      "quiz": {
+        "question": "Now the compiler says `'greting' was not declared in this scope; did you mean 'greeting'?`. What does \"not declared\" mean here?",
+        "options": [
+          "The function `greeting` is broken and must be rewritten.",
+          "`main` cannot call functions defined in the same file.",
+          "The compiler has never seen anything named `greting` — it's a typo for `greeting`, which *is* declared above main.",
+          "You need `#include <greting>`."
+        ],
+        "answer": 2,
+        "explanations": [
+          "`greeting` itself compiles fine now. The error is about a *different* name.",
+          "Calling functions in the same file is completely normal — as long as they are declared before the call.",
+          "Yes. C++ requires every name to be declared before use, and it matches names exactly. The compiler even suggested the fix. Typos, a missing `#include`, a missing `std::`, or using a variable outside the block it was declared in all produce this error.",
+          "`#include` brings in headers (files). `greting` is a function name, and a misspelled one."
+        ]
+      }
+    },
+    {
+      "id": "fix-name",
+      "title": "Make it build and run",
+      "kind": "code",
+      "content": "steps/04-fix-name.md",
+      "open": ["greet.cpp"],
+      "checks": [
+        { "type": "compiles", "noWarnings": true },
+        { "type": "output", "expect": { "equals": "Hello, Ada!" } }
+      ],
+      "hints": ["Line 12: `greting` → `greeting`."],
+      "solution": "solution/fix-name"
+    },
+    {
+      "id": "warning",
+      "title": "A warning is a bug report",
+      "kind": "code",
+      "content": "steps/05-warning.md",
+      "files": [{ "path": "count.cpp", "from": "starter/count.cpp" }],
+      "open": ["count.cpp"],
+      "commands": ["g++ -std=c++20 -Wall -Wextra count.cpp -o count && ./count"],
+      "checks": [
+        { "type": "compiles", "target": "count", "noWarnings": true },
+        { "type": "output", "target": "count", "expect": { "equals": "Total: 247" } }
+      ],
+      "hints": [
+        "There are two problems on the `for` line: the type of `i`, and the loop condition. Valid indices for 3 elements are 0, 1 and 2.",
+        "`for (std::size_t i = 0; i < scores.size(); ++i)` — or skip indices entirely: `for (int score : scores) total += score;`"
+      ],
+      "solution": "solution/fix-warning"
+    },
+    {
+      "id": "linker",
+      "title": "When the compiler is happy but the build still fails",
+      "kind": "quiz",
+      "content": "steps/06-linker.md",
+      "files": [
+        { "path": "area.h", "from": "starter/area.h" },
+        { "path": "area.cpp", "from": "starter/area.cpp" },
+        { "path": "shapes.cpp", "from": "starter/shapes.cpp" }
+      ],
+      "open": ["shapes.cpp", "area.h", "area.cpp"],
+      "commands": ["g++ -std=c++20 -c shapes.cpp area.cpp", "g++ shapes.o area.o -o shapes"],
+      "quiz": {
+        "question": "Both `-c` commands succeed, but linking fails with `undefined reference to 'circle_area(double)'`. What is going on?",
+        "options": [
+          "shapes.cpp has a syntax error the compiler missed.",
+          "area.h is missing, so the compiler can't find circle_area.",
+          "circle_area is *declared* (in area.h) so shapes.cpp compiles, but no object file *defines* it, so the linker has nothing to connect the call to.",
+          "You need to `#include \"area.cpp\"` in shapes.cpp."
+        ],
+        "answer": 2,
+        "explanations": [
+          "Both files compiled, so there is no syntax error. Notice *which tool* printed the message — `ld`, the linker.",
+          "If the header were missing you'd get a compiler error (`No such file or directory`) — and you didn't.",
+          "Exactly. A declaration is a promise: \"a function with this signature exists somewhere.\" The compiler trusts it. The linker is the one who must find the actual definition in some object file — and area.o doesn't contain one.",
+          "Never `#include` a .cpp file: you'd end up with duplicate definitions as soon as two files did it. Each .cpp is compiled separately and the linker combines them."
+        ]
+      }
+    },
+    {
+      "id": "define-it",
+      "title": "Keep the promise",
+      "kind": "code",
+      "content": "steps/07-define-it.md",
+      "open": ["area.cpp"],
+      "checks": [
+        { "type": "compiles", "target": "shapes", "noWarnings": true },
+        { "type": "output", "target": "shapes", "expect": { "equals": "Area of a circle with radius 5: 78.54" } }
+      ],
+      "hints": [
+        "The definition must match the declaration in area.h exactly: `double circle_area(double radius)`.",
+        "Area of a circle is π·r². `<numbers>` gives you `std::numbers::pi` (C++20).",
+        "```cpp\n#include \"area.h\"\n#include <numbers>\n\ndouble circle_area(double radius)\n{\n    return std::numbers::pi * radius * radius;\n}\n```"
+      ],
+      "solution": "solution/define-it"
+    }
+  ]
+}

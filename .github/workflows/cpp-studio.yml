@@ -1,0 +1,28 @@
+name: cpp-studio
+
+on:
+  push:
+    paths: ['cpp-studio/**', '.github/workflows/cpp-studio.yml']
+  pull_request:
+    paths: ['cpp-studio/**', '.github/workflows/cpp-studio.yml']
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: cpp-studio
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      # Builds the engine, CLI and VS Code extension, runs unit tests, then walks
+      # every lesson with the real compiler and CMake: each step must fail on its
+      # starting state and pass on its reference solution.
+      - run: npm test
