@@ -1,0 +1,8 @@
+{
+  "name": "@cpp-studio/engine",
+  "version": "0.1.0",
+  "description": "UI-agnostic learning engine: curriculum, lesson state, validation, toolchain and progress.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "license": "MIT"
+}

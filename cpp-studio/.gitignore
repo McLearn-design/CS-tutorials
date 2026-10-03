@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.tsbuildinfo
+*.vsix
+packages/vscode/curriculum/
+# Learner workspaces created while trying things out
+/workspace/
+release/

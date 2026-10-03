@@ -1,0 +1,90 @@
+{
+  "id": "env-cmake",
+  "title": "Building with CMake",
+  "summary": "Turn your hello project into a real CMake project: configure, build, set the language standard and warnings, and grow it to multiple files.",
+  "mode": "guided",
+  "project": "hello",
+  "concepts": ["build system", "CMake", "configure vs build", "out-of-source build", "target", "header file", "multiple translation units"],
+  "prerequisites": ["env-first-program", "env-diagnostics"],
+  "intro": "intro.md",
+  "build": {
+    "targets": {
+      "hello": { "system": "cmake", "output": "hello" }
+    }
+  },
+  "files": [
+    { "path": "hello.cpp", "from": "starter/hello.cpp" }
+  ],
+  "steps": [
+    {
+      "id": "cmakelists",
+      "title": "Write a CMakeLists.txt",
+      "kind": "code",
+      "content": "steps/01-cmakelists.md",
+      "open": ["CMakeLists.txt"],
+      "checks": [
+        { "type": "fileExists", "path": "CMakeLists.txt" },
+        { "type": "source", "path": "CMakeLists.txt", "pattern": "cmake_minimum_required\\s*\\(", "flags": "i", "label": "Declares cmake_minimum_required", "stripComments": false },
+        { "type": "source", "path": "CMakeLists.txt", "pattern": "add_executable\\s*\\(\\s*hello\\s+[^)]*hello\\.cpp", "flags": "i", "label": "Defines the hello executable from hello.cpp", "stripComments": false },
+        { "type": "compiles" },
+        { "type": "output", "expect": { "contains": "Hello C++" } }
+      ],
+      "hints": [
+        "Three commands: `cmake_minimum_required(VERSION 3.20)`, `project(hello LANGUAGES CXX)`, `add_executable(hello hello.cpp)`.",
+        "CMake errors mention a line in CMakeLists.txt — read them the same way you read compiler errors."
+      ],
+      "solution": "solution/cmakelists"
+    },
+    {
+      "id": "configure-build",
+      "title": "Configure, then build",
+      "kind": "terminal",
+      "content": "steps/02-configure-build.md",
+      "commands": ["cmake -S . -B build", "cmake --build build", "./build/hello"],
+      "checks": [
+        { "type": "fileExists", "path": "build/CMakeCache.txt", "label": "The build directory has been configured" },
+        { "type": "compiles" }
+      ],
+      "hints": ["Run the commands from inside `projects/hello/` — `-S .` means \"the source is here\"."]
+    },
+    {
+      "id": "settings",
+      "title": "Language standard and warnings",
+      "kind": "code",
+      "content": "steps/03-settings.md",
+      "open": ["CMakeLists.txt"],
+      "checks": [
+        { "type": "source", "path": "CMakeLists.txt", "pattern": "CMAKE_CXX_STANDARD\\s+2[0-9]", "label": "Sets CMAKE_CXX_STANDARD to 20 or later", "stripComments": false },
+        { "type": "source", "path": "CMakeLists.txt", "pattern": "CMAKE_CXX_STANDARD_REQUIRED\\s+ON", "flags": "i", "label": "Makes the standard required", "stripComments": false },
+        { "type": "source", "path": "CMakeLists.txt", "pattern": "target_compile_options\\s*\\(\\s*hello\\b[^)]*(-Wall|/W4)", "label": "Enables warnings for the hello target", "stripComments": false },
+        { "type": "compiles", "noWarnings": true }
+      ],
+      "hints": [
+        "`set(...)` lines must come *before* `add_executable`; `target_compile_options` comes *after* it (the target must exist first).",
+        "Portable warnings:\n\n```cmake\nif(MSVC)\n    target_compile_options(hello PRIVATE /W4)\nelse()\n    target_compile_options(hello PRIVATE -Wall -Wextra -Wpedantic)\nendif()\n```"
+      ],
+      "solution": "solution/settings"
+    },
+    {
+      "id": "split",
+      "title": "More than one file",
+      "kind": "code",
+      "content": "steps/04-split.md",
+      "open": ["hello.cpp", "CMakeLists.txt"],
+      "checks": [
+        { "type": "fileExists", "path": "greeting.h" },
+        { "type": "fileExists", "path": "greeting.cpp" },
+        { "type": "source", "path": "greeting.h", "pattern": "std::string\\s+greeting\\s*\\(\\s*\\)\\s*;", "label": "greeting.h declares std::string greeting();" },
+        { "type": "source", "path": "hello.cpp", "pattern": "#\\s*include\\s*\"greeting\\.h\"", "label": "hello.cpp includes \"greeting.h\"" },
+        { "type": "source", "path": "hello.cpp", "pattern": "greeting\\s*\\(\\s*\\)", "label": "main calls greeting()" },
+        { "type": "compiles", "noWarnings": true },
+        { "type": "output", "expect": { "containsAll": ["Hello C++", "I compiled this myself"] } }
+      ],
+      "hints": [
+        "If you get `undefined reference to greeting()`, you've seen that before: the linker can't find the definition. Is greeting.cpp listed in add_executable?",
+        "`add_executable(hello hello.cpp greeting.cpp)`"
+      ],
+      "solution": "solution/split"
+    }
+  ]
+}

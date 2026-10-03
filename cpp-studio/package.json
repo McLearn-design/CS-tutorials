@@ -1,0 +1,25 @@
+{
+  "name": "cpp-studio",
+  "private": true,
+  "version": "0.1.0",
+  "description": "A C++ development environment that teaches through real projects, real compilers and real tools.",
+  "workspaces": [
+    "packages/engine",
+    "packages/cli",
+    "packages/vscode"
+  ],
+  "scripts": {
+    "build": "tsc -b packages/engine packages/cli packages/vscode",
+    "clean": "tsc -b --clean packages/engine packages/cli packages/vscode",
+    "test": "npm run build && node --test packages/engine/dist/test/*.test.js",
+    "test:unit": "npm run build && node --test packages/engine/dist/test/unit.test.js",
+    "studio": "node packages/cli/dist/main.js",
+    "package": "npm run build && node scripts/package.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@vscode/vsce": "^4.0.0",
+    "esbuild": "^0.28.2",
+    "typescript": "~5.9.3"
+  }
+}

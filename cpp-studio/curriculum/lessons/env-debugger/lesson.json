@@ -1,0 +1,84 @@
+{
+  "id": "env-debugger",
+  "title": "Your first crash, and the debugger",
+  "summary": "A program crashes. Instead of guessing, use a real debugger — breakpoints, stepping, locals and the call stack — to find out exactly why.",
+  "mode": "guided",
+  "project": "debugger",
+  "concepts": ["crash", "segmentation fault", "debugger", "breakpoint", "stepping", "call stack", "locals", "nullptr"],
+  "prerequisites": ["env-diagnostics"],
+  "intro": "intro.md",
+  "build": {
+    "targets": {
+      "inventory": { "system": "direct", "sources": ["inventory.cpp"], "output": "inventory" }
+    }
+  },
+  "files": [
+    { "path": "inventory.cpp", "from": "starter/inventory.cpp" }
+  ],
+  "steps": [
+    {
+      "id": "observe",
+      "title": "Run it and watch it fail",
+      "kind": "quiz",
+      "content": "steps/01-observe.md",
+      "open": ["inventory.cpp"],
+      "commands": ["g++ -std=c++20 -g -Wall -Wextra inventory.cpp -o inventory", "./inventory"],
+      "quiz": {
+        "question": "What happens when you run the program?",
+        "options": [
+          "It prints all three lines: nuts, screws and bolts.",
+          "It fails to compile.",
+          "It prints `nuts: 80`, then crashes (Segmentation fault / access violation) without printing anything more.",
+          "It prints `screws: 0` because screws aren't in stock."
+        ],
+        "answer": 2,
+        "explanations": [
+          "Look again — run it in a terminal and read the output carefully.",
+          "It compiles without errors or warnings. The compiler can't catch every bug — this one only shows up when the program runs.",
+          "Right. One line of output, then the operating system kills the process. The output tells you roughly *when* it died, but not *why*. That's the debugger's job.",
+          "There is no item called screws — so where would a 0 come from? Run it and see."
+        ]
+      }
+    },
+    {
+      "id": "investigate",
+      "title": "Stop the program and look inside",
+      "kind": "debug",
+      "content": "steps/02-investigate.md",
+      "open": ["inventory.cpp"],
+      "commands": ["gdb ./inventory", "lldb ./inventory"],
+      "quiz": {
+        "question": "When the program crashes in the debugger, what are the values of `name` and `item` in main's frame?",
+        "options": [
+          "name = \"nuts\", item = a valid address",
+          "name = \"screws\", item = 0x0 (nullptr)",
+          "name = \"bolts\", item = 0x0 (nullptr)",
+          "name = \"screws\", item = a valid address"
+        ],
+        "answer": 1,
+        "explanations": [
+          "\"nuts\" was found and printed fine. The crash happens on the next iteration.",
+          "Exactly. `find_item` searched the whole vector, found no \"screws\", and returned `nullptr` — the address 0, which means \"points at nothing\". Then `item->quantity` tried to read memory at (nearly) address 0, which the OS doesn't allow.",
+          "The loop never gets that far — it dies on the second name.",
+          "If item held a valid address, `item->quantity` would work. Look at its value in the Variables panel."
+        ]
+      }
+    },
+    {
+      "id": "fix",
+      "title": "Fix the bug",
+      "kind": "code",
+      "content": "steps/03-fix.md",
+      "open": ["inventory.cpp"],
+      "checks": [
+        { "type": "compiles", "noWarnings": true },
+        { "type": "output", "expect": { "equals": "nuts: 80\nscrews: not found\nbolts: 120" } }
+      ],
+      "hints": [
+        "`find_item` is behaving as designed — `nullptr` is how it says \"not found\". The bug is the caller ignoring that possibility.",
+        "Before using `item->quantity`, check `if (item == nullptr)` and print the not-found message instead."
+      ],
+      "solution": "solution/fix"
+    }
+  ]
+}

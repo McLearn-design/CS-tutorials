@@ -1,0 +1,73 @@
+{
+  "id": "found-gcd",
+  "title": "Independent work: GCD and LCM",
+  "summary": "No scaffolding. Implement greatest common divisor against provided tests, then least common multiple with tests you write yourself — checked by hidden acceptance tests.",
+  "mode": "independent",
+  "project": "calculator",
+  "concepts": ["algorithm", "Euclid's algorithm", "modulo", "long long", "edge cases", "integer overflow", "acceptance tests"],
+  "prerequisites": ["found-functions"],
+  "intro": "intro.md",
+  "build": {
+    "default": "tests",
+    "targets": {
+      "calculator": { "system": "cmake", "output": "calculator" },
+      "tests": { "system": "cmake", "output": "calc_tests" },
+      "lcm-acceptance": {
+        "system": "direct",
+        "sources": ["lesson:acceptance/lcm_acceptance_test.cpp", "shared:test_main.cpp", "calc.cpp"],
+        "includeDirs": [".", "shared:"],
+        "output": "lcm_acceptance"
+      }
+    }
+  },
+  "files": [
+    { "path": "calc.h", "from": "../found-functions/solution/declare/calc.h" },
+    { "path": "calc.cpp", "from": "../found-functions/solution/throw/calc.cpp" },
+    { "path": "main.cpp", "from": "../found-functions/solution/throw/main.cpp" },
+    { "path": "CMakeLists.txt", "from": "../found-functions/solution/first-test/CMakeLists.txt" },
+    { "path": "tests/studio_test.hpp", "from": "shared:studio_test.hpp" },
+    { "path": "tests/test_main.cpp", "from": "shared:test_main.cpp" },
+    { "path": "tests/calc_test.cpp", "from": "../found-functions/solution/throw/tests/calc_test.cpp" }
+  ],
+  "steps": [
+    {
+      "id": "gcd",
+      "title": "Greatest common divisor",
+      "kind": "challenge",
+      "content": "steps/01-gcd.md",
+      "files": [
+        { "path": "tests/gcd_test.cpp", "from": "provided/gcd_test.cpp", "overwrite": true }
+      ],
+      "open": ["tests/gcd_test.cpp"],
+      "checks": [
+        { "type": "source", "path": "CMakeLists.txt", "pattern": "gcd_test\\.cpp", "label": "gcd_test.cpp is part of the calc_tests target" },
+        { "type": "tests", "target": "tests", "requireTests": ["gcd_of_two_positive_numbers", "gcd_of_coprime_numbers_is_one", "gcd_with_zero", "gcd_is_never_negative", "gcd_is_fast_for_large_numbers"] },
+        { "type": "compiles", "target": "calculator", "noWarnings": true }
+      ],
+      "hints": [
+        "Declare `long long gcd(long long a, long long b);` in calc.h and define it in calc.cpp. Add tests/gcd_test.cpp to calc_tests in CMakeLists.txt.",
+        "Euclid noticed that any number dividing both `a` and `b` also divides `a % b` (the remainder). So gcd(a, b) == gcd(b, a % b). What is gcd(a, 0)?",
+        "Negative inputs: the GCD is defined as non-negative. Make both inputs non-negative first."
+      ],
+      "solution": "solution/gcd"
+    },
+    {
+      "id": "lcm",
+      "title": "Least common multiple — your tests, hidden tests",
+      "kind": "challenge",
+      "content": "steps/02-lcm.md",
+      "checks": [
+        { "type": "fileExists", "path": "tests/lcm_test.cpp" },
+        { "type": "source", "path": "tests/lcm_test.cpp", "pattern": "(\\bTEST\\s*\\([\\s\\S]*){3}", "label": "tests/lcm_test.cpp contains at least 3 tests" },
+        { "type": "tests", "target": "tests", "label": "Your tests pass" },
+        { "type": "tests", "target": "lcm-acceptance", "label": "Hidden acceptance tests pass", "failMessage": "Your tests pass, but the hidden acceptance tests found a case your lcm gets wrong. Which edge cases haven't you tested yet?" }
+      ],
+      "hints": [
+        "Mathematically, lcm(a, b) = |a·b| / gcd(a, b).",
+        "Think about zero, negative numbers, and what happens to `a * b` when both are close to the largest `long long`.",
+        "`a / gcd(a, b) * b` computes the same value without the oversized intermediate product."
+      ],
+      "solution": "solution/lcm"
+    }
+  ]
+}

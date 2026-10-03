@@ -1,0 +1,104 @@
+{
+  "id": "found-values",
+  "title": "Values, types and a first calculator",
+  "summary": "Start the calculator project: variables and types, reading input, arithmetic operators, integer vs floating-point division, and making decisions.",
+  "mode": "incremental",
+  "project": "calculator",
+  "concepts": ["variable", "type", "double", "int", "initialisation", "std::cin", "arithmetic operators", "integer division", "char", "if / switch"],
+  "prerequisites": ["env-cmake"],
+  "intro": "intro.md",
+  "build": {
+    "targets": {
+      "calculator": { "system": "cmake", "output": "calculator" }
+    }
+  },
+  "files": [
+    { "path": "CMakeLists.txt", "from": "starter/CMakeLists.txt" },
+    { "path": "main.cpp", "from": "starter/main.cpp" }
+  ],
+  "steps": [
+    {
+      "id": "variables",
+      "title": "Variables have types",
+      "kind": "code",
+      "content": "steps/01-variables.md",
+      "open": ["main.cpp"],
+      "checks": [
+        { "type": "source", "path": "main.cpp", "pattern": "\\bdouble\\s+\\w+\\s*(=|\\{)", "label": "Declares a double variable" },
+        { "type": "compiles", "noWarnings": true },
+        { "type": "output", "expect": { "equals": "7.5 + 2.5 = 10" } }
+      ],
+      "hints": [
+        "Declare: `double a = 7.5;` and `double b = 2.5;`",
+        "Print each part with `<<`: `std::cout << a << \" + \" << b << \" = \" << a + b << '\\n';`"
+      ],
+      "solution": "solution/variables"
+    },
+    {
+      "id": "input",
+      "title": "Reading input",
+      "kind": "code",
+      "content": "steps/02-input.md",
+      "open": ["main.cpp"],
+      "checks": [
+        { "type": "source", "path": "main.cpp", "pattern": "std::cin\\s*>>", "label": "Reads from std::cin" },
+        { "type": "compiles", "noWarnings": true },
+        { "type": "output", "stdin": "3 4\n", "expect": { "contains": "3 + 4 = 7" } },
+        { "type": "output", "stdin": "1.5 -0.5\n", "expect": { "contains": "1.5 + -0.5 = 1" } }
+      ],
+      "hints": ["`std::cin >> a >> b;` reads two whitespace-separated numbers into `a` and `b`."],
+      "solution": "solution/input"
+    },
+    {
+      "id": "integer-division",
+      "title": "Integer division",
+      "kind": "quiz",
+      "content": "steps/03-integer-division.md",
+      "quiz": {
+        "question": "`int a = 7; int b = 2;` — what is the value of `a / b`?",
+        "options": ["3.5", "3", "4", "It doesn't compile: the result isn't a whole number."],
+        "answer": 1,
+        "explanations": [
+          "That's what Python 3's `/` gives you. In C++, the *types* of the operands decide which division happens.",
+          "Right: `int / int` is **integer division** — the fractional part is discarded (truncated toward zero). Python spells this `//`. To get 3.5 you need at least one operand to be floating-point: `7.0 / 2` or `static_cast<double>(a) / b`.",
+          "Integer division doesn't round — it truncates toward zero. `7 / 2` is 3, and `-7 / 2` is -3.",
+          "It compiles fine. C++ picks integer division because both operands are `int`. That's a classic source of silent bugs."
+        ]
+      }
+    },
+    {
+      "id": "operators",
+      "title": "All four operations",
+      "kind": "code",
+      "content": "steps/04-operators.md",
+      "open": ["main.cpp"],
+      "checks": [
+        { "type": "compiles", "noWarnings": true },
+        { "type": "output", "stdin": "3 4\n", "expect": { "containsAll": ["3 + 4 = 7", "3 - 4 = -1", "3 * 4 = 12", "3 / 4 = 0.75"] } }
+      ],
+      "hints": ["Four `std::cout` lines, one per operator: `+ - * /`. Because `a` and `b` are `double`, `/` is floating-point division."],
+      "solution": "solution/operators"
+    },
+    {
+      "id": "choose-op",
+      "title": "Challenge: an expression calculator",
+      "kind": "challenge",
+      "content": "steps/05-choose-op.md",
+      "open": ["main.cpp"],
+      "checks": [
+        { "type": "compiles", "noWarnings": true },
+        { "type": "output", "stdin": "3 * 4\n", "expect": { "contains": "3 * 4 = 12" } },
+        { "type": "output", "stdin": "10 / 4\n", "expect": { "contains": "10 / 4 = 2.5" } },
+        { "type": "output", "stdin": "7 - 10\n", "expect": { "contains": "7 - 10 = -3" } },
+        { "type": "output", "stdin": "1 / 0\n", "expect": { "contains": "Error: division by zero" } },
+        { "type": "output", "stdin": "2 % 3\n", "expect": { "contains": "Unknown operator: %" } }
+      ],
+      "hints": [
+        "A single character has type `char`. `std::cin >> a >> op >> b;` reads `3 * 4` into three variables, skipping the spaces.",
+        "Compare characters with single quotes: `if (op == '+')`. A `switch (op)` with `case '+':` is a tidy alternative — don't forget `break;`.",
+        "Check for division by zero *before* dividing. (For doubles, `1.0 / 0` doesn't crash — it produces `inf`. That's still not what a user wants to see.)"
+      ],
+      "solution": "solution/choose-op"
+    }
+  ]
+}
