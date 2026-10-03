@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // A terminal front end for the learning engine. It contains no lesson logic:
 // everything goes through Studio, exactly as the VS Code extension does.
+import * as fs from 'fs';
 import * as path from 'path';
 import { CheckReport, LessonStatus, StepView, Studio, StudioError } from '@cpp-studio/engine';
 
@@ -33,11 +34,17 @@ Commands
 
 The workspace defaults to $CPP_STUDIO_WORKSPACE or the current directory.`;
 
+/** Installed packages ship the curriculum next to the bundle; a source checkout uses the repo's copy. */
+function defaultCurriculum(): string {
+  const bundled = path.join(__dirname, 'curriculum');
+  return fs.existsSync(path.join(bundled, 'curriculum.json')) ? bundled : path.resolve(__dirname, '../../../curriculum');
+}
+
 interface Args { workspace: string; curriculum: string; command: string; rest: string[]; flags: Set<string> }
 
 function parseArgs(argv: string[]): Args {
   let workspace = process.env.CPP_STUDIO_WORKSPACE ?? process.cwd();
-  let curriculum = process.env.CPP_STUDIO_CURRICULUM ?? path.resolve(__dirname, '../../../curriculum');
+  let curriculum = process.env.CPP_STUDIO_CURRICULUM ?? defaultCurriculum();
   const rest: string[] = [];
   const flags = new Set<string>();
   for (let i = 0; i < argv.length; i++) {

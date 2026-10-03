@@ -5,3 +5,4 @@ dist/
 packages/vscode/curriculum/
 # Learner workspaces created while trying things out
 /workspace/
+release/

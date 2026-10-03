@@ -26,7 +26,33 @@ This directory has the first implementation: a UI-agnostic **learning engine**, 
 └─────────────────────────────────────────────────────────┘
 ```
 
-## Quick start
+## Install (no clone needed)
+
+Download the files from the latest **cpp-studio-v…** release on GitHub (or from the *cpp-studio-installers*
+artifact of any `cpp-studio-release` workflow run):
+
+| What | Install | Update |
+|------|---------|--------|
+| VS Code extension | `code --install-extension cpp-studio-<version>.vsix` (or Extensions view → `…` → *Install from VSIX…*) | Install the newer `.vsix` the same way; it replaces the old one. Automatic if installed from the Marketplace |
+| Command-line app | `npm install -g cpp-studio-cli-<version>.tgz`, then run `cpp-studio` | Install the newer `.tgz`, or `npm update -g cpp-studio-cli` if installed from npm |
+
+You still need a C++ compiler and CMake on the machine. Run `cpp-studio doctor` or *C++ Studio: Check Toolchain* to see
+what's missing. The lessons ship inside both packages, and your progress lives in your workspace folder, so updating
+never loses your work.
+
+### Making a release
+
+```sh
+git tag cpp-studio-v0.2.0 && git push origin cpp-studio-v0.2.0
+```
+
+The `cpp-studio-release` workflow tests everything, builds both installers, and attaches them to a GitHub Release.
+If the repository has `VSCE_PAT`, `OVSX_PAT` or `NPM_TOKEN` secrets, it also publishes to the VS Code Marketplace,
+Open VSX or npm. Once it's published there, installed copies update themselves.
+
+To build the installers locally: `npm run package`. The files land in `release/`.
+
+## Develop from source
 
 Prerequisites: Node 20+, a C++ compiler (g++, clang++ or MSVC), CMake 3.20+, and optionally gdb/lldb.
 
