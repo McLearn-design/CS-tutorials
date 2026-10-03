@@ -217,3 +217,41 @@ export function describeCrash(signal: string | null, exitCode: number | null): s
   if (sig) return `The program was terminated by signal ${sig}.`;
   return undefined;
 }
+
+const SANITIZER_EXPLAIN: [RegExp, string][] = [
+  [/heap-use-after-free/, 'Use after free: the program used heap memory after it was released with `delete`. Whatever pointer you used is *dangling*.'],
+  [/stack-use-after-return|stack-use-after-scope/, 'Use after scope/return: the program used a local variable after its lifetime ended — usually through a pointer or reference that outlived it.'],
+  [/heap-buffer-overflow/, 'Heap buffer overflow: the program read or wrote past the end (or before the start) of a block allocated with `new[]`.'],
+  [/stack-buffer-overflow/, 'Stack buffer overflow: the program indexed outside a local array.'],
+  [/global-buffer-overflow/, 'Global buffer overflow: the program indexed outside a global array.'],
+  [/attempting double-free/, 'Double free: the same memory was released twice. Two objects probably both believe they own the same pointer.'],
+  [/alloc-dealloc-mismatch/, 'Allocation/deallocation mismatch: memory from `new[]` must be released with `delete[]`, and memory from `new` with `delete`.'],
+  [/detected memory leaks/, 'Memory leak: memory allocated with `new` was never released with `delete`.'],
+  [/SEGV on unknown address 0x0+\b|SEGV on unknown address \(pc/, 'Null pointer dereference: the program accessed memory through a null pointer.'],
+  [/SEGV/, 'Invalid memory access (segmentation fault).'],
+  [/runtime error: signed integer overflow/, 'Signed integer overflow: the result did not fit in the type. In C++ this is undefined behaviour.'],
+  [/runtime error: division by zero/, 'Integer division by zero (undefined behaviour).'],
+  [/runtime error:/, 'The UndefinedBehaviorSanitizer detected undefined behaviour.'],
+];
+
+/**
+ * Summarise an AddressSanitizer / UndefinedBehaviorSanitizer report: what kind of bug,
+ * and the first stack frame in the learner's code.
+ */
+export function describeSanitizerReport(stderr: string): string | undefined {
+  const asan = /ERROR: (AddressSanitizer|LeakSanitizer): ([^\n]*)/.exec(stderr);
+  const ubsan = /^(.+?):(\d+):(\d+): runtime error: (.*)$/m.exec(stderr);
+  if (!asan && !ubsan) return undefined;
+  const headline = asan ? asan[0] : ubsan![0];
+  const explain = SANITIZER_EXPLAIN.find(([re]) => re.test(headline))?.[1] ?? 'A sanitizer detected a memory error.';
+  let where = '';
+  if (asan) {
+    // First frame that points at a source file outside system/library paths.
+    const frames = [...stderr.matchAll(/^\s*#\d+ 0x[0-9a-f]+ in (\S+) (\S+?):(\d+)/gm)];
+    const own = frames.find((f) => !/\/usr\/|libsanitizer|compiler-rt|\/Library\/|sysdeps|include\/c\+\+/.test(f[2]));
+    if (own) where = `\nFirst location in your code: ${own[2].split('/').pop()}:${own[3]} (in ${own[1]})`;
+  } else {
+    where = `\nLocation: ${ubsan![1].split('/').pop()}:${ubsan![2]}`;
+  }
+  return `${explain}${where}\n\nSanitizer report: ${headline.trim()}`;
+}

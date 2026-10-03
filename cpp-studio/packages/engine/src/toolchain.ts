@@ -1,7 +1,8 @@
 import { spawn } from 'child_process';
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
-import { describeCrash, parseDiagnostics } from './diagnostics';
+import { describeCrash, describeSanitizerReport, parseDiagnostics } from './diagnostics';
 import { BuildResult, BuildTarget, CommandResult, RunResult } from './types';
 
 export type CompilerKind = 'gcc' | 'clang' | 'msvc' | 'unknown';
@@ -143,7 +144,39 @@ export function findCMakeExecutable(buildDir: string, target: string): string | 
 }
 
 export class Builder {
+  private sanitizerProbe = new Map<string, Promise<boolean>>();
+
   constructor(private readonly tc: Toolchain) {}
+
+  /** Can this compiler build *and run* a program with the given sanitizers? Probed once per set. */
+  sanitizersAvailable(kinds: string[]): Promise<boolean> {
+    const cc = this.tc.compiler;
+    const key = kinds.join(',');
+    if (!cc) return Promise.resolve(false);
+    let p = this.sanitizerProbe.get(key);
+    if (!p) {
+      p = (async () => {
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cpp-studio-san-'));
+        try {
+          const src = path.join(dir, 'probe.cpp');
+          fs.writeFileSync(src, 'int main() { int* p = new int(1); int v = *p; delete p; return v - 1; }\n');
+          const exe = path.join(dir, 'probe' + exeSuffix);
+          const args = cc.kind === 'msvc'
+            ? (kinds.includes('address') && kinds.length === 1 ? ['/nologo', '/fsanitize=address', '/Zi', src, `/Fe:${exe}`] : null)
+            : [`-fsanitize=${key}`, '-g', src, '-o', exe];
+          if (!args) return false;
+          const b = await runCommand(cc.path, args, { cwd: dir, timeoutMs: 60_000 });
+          if (b.exitCode !== 0) return false;
+          const r = await runCommand(exe, [], { cwd: dir, timeoutMs: 20_000, env: sanitizerEnv() });
+          return r.exitCode === 0;
+        } finally {
+          fs.rmSync(dir, { recursive: true, force: true });
+        }
+      })();
+      this.sanitizerProbe.set(key, p);
+    }
+    return p;
+  }
 
   async build(name: string, target: BuildTarget, projectDir: string): Promise<BuildResult> {
     return target.system === 'cmake' ? this.buildCMake(name, target, projectDir) : this.buildDirect(name, target, projectDir);
@@ -167,12 +200,23 @@ export class Builder {
     fs.mkdirSync(outDir, { recursive: true });
     const exe = path.join(outDir, t.output + exeSuffix);
     const std = t.standard ?? 'c++20';
+    let note: string | undefined;
+    let sanitize: string[] = [];
+    if (t.sanitize?.length) {
+      if (await this.sanitizersAvailable(t.sanitize)) {
+        sanitize = cc.kind === 'msvc' ? ['/fsanitize=address'] : [`-fsanitize=${t.sanitize.join(',')}`, '-fno-omit-frame-pointer'];
+      } else {
+        note = `Your compiler could not build with ${t.sanitize.join(' + ')} sanitizer support, so this was checked without it. ` +
+          'Memory bugs may go unnoticed. On Linux install the sanitizer runtime (`libasan` + `libubsan` for GCC, `libclang-rt-dev` for clang); ' +
+          'Apple clang and recent MSVC include AddressSanitizer.';
+      }
+    }
     let args: string[];
     if (cc.kind === 'msvc') {
-      args = [`/std:${std}`, '/EHsc', '/W4', '/Zi', '/nologo',
+      args = [`/std:${std}`, '/EHsc', '/W4', '/Zi', '/nologo', ...sanitize,
         ...(t.includeDirs ?? []).map((d) => `/I${d}`), ...(t.sources ?? []), `/Fe:${exe}`, `/Fo:${outDir}${path.sep}`];
     } else {
-      args = [`-std=${std}`, '-Wall', '-Wextra', '-g', '-fdiagnostics-color=never',
+      args = [`-std=${std}`, '-Wall', '-Wextra', '-g', '-fdiagnostics-color=never', ...sanitize,
         ...(t.includeDirs ?? []).map((d) => `-I${d}`), ...(t.flags ?? []), ...(t.sources ?? []), '-o', exe];
     }
     // Remove a stale executable so a failed build can never run old code.
@@ -183,7 +227,7 @@ export class Builder {
     if (!ok && !diagnostics.some((d) => d.severity === 'error')) {
       diagnostics.push({ file: '', line: 0, column: 0, severity: 'error', message: (r.stderr || r.stdout || 'Build failed').trim().split('\n').slice(-3).join(' '), phase: 'compiler' });
     }
-    return { target: name, ok, executable: ok ? exe : undefined, diagnostics, commands: [r], log: buildLog([r]) };
+    return { target: name, ok, note, executable: ok ? exe : undefined, diagnostics, commands: [r], log: buildLog([r]) };
   }
 
   private async buildCMake(name: string, t: BuildTarget, projectDir: string): Promise<BuildResult> {
@@ -243,10 +287,19 @@ function cmakeErrorLine(text: string): number {
   return m ? +m[1] : 0;
 }
 
+/** Make sanitizer reports deterministic and fatal, so a memory bug is always a visible failure. */
+export function sanitizerEnv(): NodeJS.ProcessEnv {
+  return {
+    ...process.env,
+    ASAN_OPTIONS: `abort_on_error=0:halt_on_error=1:detect_leaks=${process.platform === 'linux' ? 1 : 0}:symbolize=1`,
+    UBSAN_OPTIONS: 'halt_on_error=1:print_stacktrace=1',
+  };
+}
+
 export async function runExecutable(exe: string, opts: RunOptions & { args?: string[] }): Promise<RunResult> {
-  const r = await runCommand(exe, opts.args ?? [], { ...opts, timeoutMs: opts.timeoutMs ?? 10_000 });
+  const r = await runCommand(exe, opts.args ?? [], { env: sanitizerEnv(), ...opts, timeoutMs: opts.timeoutMs ?? 10_000 });
   const crashDescription = r.timedOut
     ? 'The program did not finish within the time limit. Is it waiting for input, or stuck in an infinite loop?'
-    : describeCrash(r.signal, r.exitCode);
+    : describeSanitizerReport(r.stderr) ?? describeCrash(r.signal, r.exitCode);
   return { ...r, crashed: r.timedOut || !!crashDescription, crashDescription };
 }

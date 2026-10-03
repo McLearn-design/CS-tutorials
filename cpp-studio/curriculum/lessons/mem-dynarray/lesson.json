@@ -1,0 +1,138 @@
+{
+  "id": "mem-dynarray",
+  "title": "Build your own dynamic array",
+  "summary": "Write a small std::vector from scratch: a class that owns heap memory, grows geometrically, survives being copied (the rule of three), and checks its bounds — all under AddressSanitizer.",
+  "mode": "incremental",
+  "project": "dynarray",
+  "concepts": ["class", "private members", "member functions", "constructor initialiser list", "destructor", "new[] / delete[]", "operator[]", "const member functions", "capacity vs size", "amortised growth", "shallow vs deep copy", "copy constructor", "copy assignment", "rule of three", "std::out_of_range"],
+  "prerequisites": ["mem-lifetime"],
+  "intro": "intro.md",
+  "build": {
+    "default": "tests",
+    "targets": {
+      "tests": {
+        "system": "direct",
+        "sources": ["tests/test_main.cpp", "tests/int_array_test.cpp", "int_array.cpp"],
+        "includeDirs": ["."],
+        "output": "int_array_tests",
+        "sanitize": ["address", "undefined"]
+      },
+      "your-at-tests": {
+        "system": "direct",
+        "sources": ["tests/test_main.cpp", "tests/at_test.cpp", "int_array.cpp"],
+        "includeDirs": ["."],
+        "output": "at_tests",
+        "sanitize": ["address", "undefined"]
+      },
+      "at-acceptance": {
+        "system": "direct",
+        "sources": ["lesson:acceptance/at_acceptance.cpp", "shared:test_main.cpp", "int_array.cpp"],
+        "includeDirs": [".", "shared:"],
+        "output": "at_acceptance",
+        "sanitize": ["address", "undefined"]
+      }
+    }
+  },
+  "files": [
+    { "path": "int_array.h", "from": "starter/int_array.h" },
+    { "path": "int_array.cpp", "from": "starter/int_array.cpp" },
+    { "path": "tests/studio_test.hpp", "from": "shared:studio_test.hpp" },
+    { "path": "tests/test_main.cpp", "from": "shared:test_main.cpp" }
+  ],
+  "steps": [
+    {
+      "id": "fixed-size",
+      "title": "A class that owns memory",
+      "kind": "code",
+      "content": "steps/01-fixed-size.md",
+      "files": [{ "path": "tests/int_array_test.cpp", "from": "provided/test_step1.cpp", "overwrite": true }],
+      "open": ["int_array.h", "int_array.cpp", "tests/int_array_test.cpp"],
+      "commands": ["g++ -std=c++20 -g -Wall -Wextra -fsanitize=address,undefined -I. tests/test_main.cpp tests/int_array_test.cpp int_array.cpp -o int_array_tests && ./int_array_tests"],
+      "checks": [
+        { "type": "tests", "target": "tests", "requireTests": ["new_array_has_requested_size", "new_array_is_zero_filled", "elements_can_be_written_and_read", "const_array_can_be_read", "many_arrays_come_and_go"] }
+      ],
+      "hints": [
+        "Constructor: `IntArray::IntArray(std::size_t size) : data_(new int[size]()), size_(size) {}` — the `()` after `new int[size]` zero-fills the array.",
+        "Destructor: `delete[] data_;` — `delete[]` because it came from `new[]`.",
+        "`operator[]` returns `data_[index]`. Write it twice: once returning `int&`, once marked `const` returning `const int&`."
+      ],
+      "solution": "solution/fixed-size"
+    },
+    {
+      "id": "grow",
+      "title": "Growing: size, capacity and push_back",
+      "kind": "code",
+      "content": "steps/02-grow.md",
+      "files": [{ "path": "tests/int_array_test.cpp", "from": "provided/test_step2.cpp", "overwrite": true }],
+      "open": ["int_array.h", "int_array.cpp"],
+      "checks": [
+        { "type": "tests", "target": "tests", "requireTests": ["default_array_is_empty", "push_back_appends", "push_back_grows_past_the_initial_size", "many_push_backs_keep_every_value", "capacity_grows_geometrically"] }
+      ],
+      "hints": [
+        "Add `std::size_t capacity_;` to the class, and make *every* constructor initialise it. Add the declarations `IntArray();`, `std::size_t capacity() const;` and `void push_back(int value);`.",
+        "push_back: if `size_ == capacity_`, allocate a bigger buffer (double it; start at, say, 4), copy the old elements across, `delete[]` the old buffer, and point `data_` at the new one. Then store the value at `data_[size_]` and `++size_`."
+      ],
+      "solution": "solution/grow"
+    },
+    {
+      "id": "copy-crash",
+      "title": "Copying goes wrong",
+      "kind": "debug",
+      "content": "steps/03-copy-crash.md",
+      "files": [{ "path": "tests/int_array_test.cpp", "from": "provided/test_step3.cpp", "overwrite": true }],
+      "open": ["tests/int_array_test.cpp"],
+      "quiz": {
+        "question": "With the new copy tests, the test program fails `copies_are_independent` and AddressSanitizer reports \"attempting double-free\". Why?",
+        "options": [
+          "`IntArray b = a;` is a compile error that the compiler missed.",
+          "The compiler-generated copy constructor copies each member — including the pointer `data_`. Now `a` and `b` share one buffer: writing `b[0]` changes `a[0]`, and both destructors `delete[]` the same memory.",
+          "push_back has a bug that only shows up when arrays are copied.",
+          "AddressSanitizer is reporting a false positive."
+        ],
+        "answer": 1,
+        "explanations": [
+          "It compiles — that's the problem. The compiler happily writes a copy constructor for you; it just doesn't know what your pointer *means*.",
+          "Exactly. A member-by-member copy of a pointer is a **shallow copy**: two objects, one buffer, two owners. The fix is a **deep copy**: give the new object its own buffer with the same contents.",
+          "The tests that only use push_back passed. The failure starts with the first test that copies.",
+          "Sanitizers have essentially no false positives for this kind of error. When ASan says double-free, something was freed twice."
+        ]
+      }
+    },
+    {
+      "id": "rule-of-three",
+      "title": "The rule of three",
+      "kind": "code",
+      "content": "steps/04-rule-of-three.md",
+      "open": ["int_array.h", "int_array.cpp"],
+      "checks": [
+        { "type": "tests", "target": "tests", "requireTests": ["copies_are_independent", "assignment_copies_and_is_independent", "self_assignment_is_harmless"] }
+      ],
+      "hints": [
+        "Declare `IntArray(const IntArray& other);` and `IntArray& operator=(const IntArray& other);` in the class.",
+        "Copy constructor: allocate a new buffer of `other.capacity_` (or nullptr if it's 0), copy `other.size_` elements, copy size_ and capacity_.",
+        "Assignment: if `this == &other` return `*this`. Otherwise make a full copy first (`IntArray copy(other);`), then `delete[]` your old buffer, take over the copy's members, and set `copy.data_ = nullptr` so the copy's destructor doesn't free them."
+      ],
+      "solution": "solution/rule-of-three"
+    },
+    {
+      "id": "at",
+      "title": "Challenge: bounds checking",
+      "kind": "challenge",
+      "content": "steps/05-at.md",
+      "open": ["int_array.h", "int_array.cpp"],
+      "checks": [
+        { "type": "fileExists", "path": "tests/at_test.cpp" },
+        { "type": "source", "path": "tests/at_test.cpp", "pattern": "(\\bTEST\\s*\\([\\s\\S]*){3}", "label": "tests/at_test.cpp has at least 3 tests" },
+        { "type": "tests", "target": "your-at-tests", "label": "Your tests pass" },
+        { "type": "tests", "target": "tests", "label": "The earlier tests still pass" },
+        { "type": "tests", "target": "at-acceptance", "label": "Hidden acceptance tests pass", "failMessage": "Your tests pass, but the hidden tests found a problem. Did you check every boundary — index == size, empty arrays, const arrays, popping until empty?" }
+      ],
+      "hints": [
+        "`if (index >= size_) throw std::out_of_range(\"index out of range\");` — `#include <stdexcept>`.",
+        "You need two `at`s, like `operator[]`: one returning `int&`, one `const` returning `const int&`.",
+        "pop_back only needs `--size_` — the memory stays allocated for the next push_back. Throw if `size_ == 0` first."
+      ],
+      "solution": "solution/at"
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "id": "found-structs",
+  "title": "Structs, references and const: an inventory",
+  "summary": "Group data into your own types, find out the hard way that C++ copies by default, and learn when to pass by value, by reference and by const reference. Finish with std::optional and enum class.",
+  "mode": "incremental",
+  "project": "inventory",
+  "concepts": ["struct", "aggregate initialisation", "default member initialisers", "value semantics", "reference (&)", "const reference", "std::optional", "enum class", "switch over an enum"],
+  "prerequisites": ["found-vectors"],
+  "intro": "intro.md",
+  "build": {
+    "default": "tests",
+    "targets": {
+      "inventory": { "system": "cmake", "output": "inventory" },
+      "tests": { "system": "cmake", "output": "inventory_tests" },
+      "category-acceptance": {
+        "system": "direct",
+        "sources": ["lesson:acceptance/category_acceptance.cpp", "shared:test_main.cpp", "inventory.cpp"],
+        "includeDirs": [".", "shared:"],
+        "output": "category_acceptance"
+      }
+    }
+  },
+  "files": [
+    { "path": "CMakeLists.txt", "from": "starter/CMakeLists.txt" },
+    { "path": "inventory.h", "from": "starter/inventory.h" },
+    { "path": "inventory.cpp", "from": "starter/inventory.cpp" },
+    { "path": "main.cpp", "from": "starter/main.cpp" },
+    { "path": "tests/studio_test.hpp", "from": "shared:studio_test.hpp" },
+    { "path": "tests/test_main.cpp", "from": "shared:test_main.cpp" }
+  ],
+  "steps": [
+    {
+      "id": "item",
+      "title": "Your own type",
+      "kind": "code",
+      "content": "steps/01-item.md",
+      "files": [{ "path": "tests/item_test.cpp", "from": "provided/item_test.cpp", "overwrite": true }],
+      "open": ["inventory.h", "inventory.cpp", "tests/item_test.cpp"],
+      "checks": [
+        { "type": "source", "path": "inventory.h", "pattern": "\\bstruct\\s+Item\\b", "label": "inventory.h defines struct Item" },
+        { "type": "tests", "target": "tests", "requireTests": ["item_holds_its_fields", "item_fields_default_to_zero", "total_value_adds_quantity_times_price", "total_value_of_empty_inventory_is_zero"] }
+      ],
+      "hints": [
+        "```cpp\nstruct Item {\n    std::string name;\n    int quantity = 0;\n    double price = 0.0;\n};\n```\nNote the `;` after the closing brace.",
+        "Declare `double total_value(const std::vector<Item>& items);` in the header, define it in inventory.cpp with a loop: `for (const Item& item : items) total += item.quantity * item.price;`"
+      ],
+      "solution": "solution/item"
+    },
+    {
+      "id": "restock",
+      "title": "The bug that copies",
+      "kind": "debug",
+      "content": "steps/02-restock.md",
+      "files": [
+        { "path": "inventory.h", "from": "provided/restock_starter.h", "overwrite": true },
+        { "path": "inventory.cpp", "from": "provided/restock_starter.cpp", "overwrite": true },
+        { "path": "tests/restock_test.cpp", "from": "provided/restock_test.cpp", "overwrite": true }
+      ],
+      "open": ["inventory.cpp", "tests/restock_test.cpp"],
+      "checks": [
+        { "type": "tests", "target": "tests", "requireTests": ["restock_increases_the_quantity"] },
+        { "type": "source", "path": "inventory.h", "pattern": "void\\s+restock\\s*\\(\\s*Item\\s*&", "label": "restock takes the item by reference" }
+      ],
+      "hints": [
+        "Set a breakpoint inside `restock` and step through the test. Watch `item.quantity` change… then step out and look at `nuts.quantity` in the test.",
+        "`item` is a *copy* of `nuts`. Change the parameter to `Item& item` — in both the header and the .cpp."
+      ],
+      "solution": "solution/restock"
+    },
+    {
+      "id": "which-parameter",
+      "title": "Choosing a parameter type",
+      "kind": "quiz",
+      "content": "steps/03-which-parameter.md",
+      "quiz": {
+        "question": "You're writing `print_item`, which only reads an Item to display it. Which parameter type is best?",
+        "options": ["`Item item`", "`Item& item`", "`const Item& item`", "`Item* item`"],
+        "answer": 2,
+        "explanations": [
+          "It works, but it copies the whole Item — including its `std::string` — every time it's called, for no benefit.",
+          "No copy, but it tells every reader (and the compiler) that print_item might *change* the item. It also can't be called with a const Item or a temporary.",
+          "Yes: no copy, and the `const` is a compiler-checked promise not to modify it. This is the default for passing anything larger than a few numbers into a function that only reads it.",
+          "Pointers can be null, so the function would have to handle that case, and callers must write `&item`. Prefer references when \"no object\" isn't a valid input."
+        ]
+      }
+    },
+    {
+      "id": "find",
+      "title": "Maybe there's an answer: std::optional",
+      "kind": "code",
+      "content": "steps/04-find.md",
+      "files": [{ "path": "tests/find_test.cpp", "from": "provided/find_test.cpp", "overwrite": true }],
+      "open": ["inventory.cpp", "tests/find_test.cpp"],
+      "checks": [
+        { "type": "tests", "target": "tests", "requireTests": ["find_index_finds_an_item_by_name", "find_index_reports_missing_items"] }
+      ],
+      "hints": [
+        "Declare in inventory.h (and `#include <optional>`): `std::optional<std::size_t> find_index(const std::vector<Item>& items, const std::string& name);`",
+        "Return the index `i` when found (it converts to an optional automatically); after the loop, `return std::nullopt;`."
+      ],
+      "solution": "solution/find"
+    },
+    {
+      "id": "category",
+      "title": "Challenge: categories",
+      "kind": "challenge",
+      "content": "steps/05-category.md",
+      "open": ["inventory.h", "main.cpp"],
+      "checks": [
+        { "type": "source", "path": "inventory.h", "pattern": "enum\\s+class\\s+Category\\b", "label": "inventory.h defines enum class Category" },
+        { "type": "tests", "target": "tests", "label": "Your tests still pass" },
+        { "type": "tests", "target": "category-acceptance", "label": "Hidden tests for categories pass" },
+        { "type": "compiles", "target": "inventory", "noWarnings": true },
+        { "type": "output", "target": "inventory", "expect": { "containsAll": ["bolts (part): 120", "wrench (tool): 2", "oil (consumable): 5", "total value: 69"] } }
+      ],
+      "hints": [
+        "`enum class Category { Tool, Part, Consumable };` goes *above* `struct Item` (the struct uses it). Add `Category category = Category::Part;` as the struct's last member.",
+        "to_string: a `switch (category)` with one `case Category::Tool: return \"tool\";` per enumerator.",
+        "main: build the vector with four values per item, e.g. `{\"wrench\", 2, 12.0, Category::Tool}`, then loop and print."
+      ],
+      "solution": "solution/category"
+    }
+  ]
+}

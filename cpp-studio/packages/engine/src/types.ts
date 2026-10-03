@@ -58,6 +58,11 @@ export interface BuildTarget {
   output: string;
   standard?: string;           // default c++20
   flags?: string[];            // extra flags for direct builds (gcc/clang syntax)
+  /**
+   * direct: build with runtime checkers. If the toolchain can't link them (e.g. the sanitizer
+   * runtime isn't installed) the target is built without them and the build reports a note.
+   */
+  sanitize?: ('address' | 'undefined')[];
   includeDirs?: string[];
 }
 
@@ -227,6 +232,8 @@ export interface CommandResult {
 export interface BuildResult {
   target: string;
   ok: boolean;
+  /** Set when requested sanitizers could not be used. */
+  note?: string;
   executable?: string;
   diagnostics: Diagnostic[];
   commands: CommandResult[];

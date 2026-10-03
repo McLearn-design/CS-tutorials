@@ -5,7 +5,7 @@ compelling in VS Code, a custom shell won't fix that.
 
 ```text
 VS Code extension ─► prove the engine ─► 10–20 real lessons ─► validate with learners ─► standalone shell ─► C++ Studio
-        ▲ we are here (7 lessons)
+                      ▲ we are here (13 lessons)
 ```
 
 ## Phase A — Engine and first lessons (done in this iteration)
@@ -19,15 +19,23 @@ VS Code extension ─► prove the engine ─► 10–20 real lessons ─► val
 - [x] CLI front end
 - [x] Track 0 (environment) and the start of Track 1 (foundations): 7 lessons, CI-verified with real compilers
 
-## Phase B — Complete the foundations and validate with learners
+## Phase A.2 — Installable product (done)
 
-- [ ] Track 1: control flow in depth (loops, `while`/`for`), `std::string` processing, `std::vector`, structs, enums, `const`, references
+- [x] `.vsix` and CLI tarball built by `npm run package` and by the release workflow on every `cpp-studio-v*` tag
+- [x] Self-update from GitHub Releases (extension: one click; CLI: `cpp-studio update`), no marketplace required
+- [x] Getting-started walkthrough, workspace creation, toolchain guide with per-OS install commands
+- [x] Track 1 complete: loops, strings, vectors and algorithms, structs/references/const, `std::optional`, `enum class`
+- [x] Track 2 started: object lifetime, use-after-free with AddressSanitizer, `unique_ptr`, build-your-own dynamic array
+- [x] Sanitizer builds with graceful fallback; sanitizer reports summarised for learners
+
+## Phase B — Validate with learners
+
+- [ ] Publish to the VS Code Marketplace and Open VSX (needs a publisher account; the workflow is ready)
 - [ ] Git inside the course: each lesson's project becomes a repository, and steps end with a commit
-- [ ] Track 0 extras: sanitizers (`-fsanitize=address,undefined`) as a first-class debugging tool, `clang-format`
+- [ ] Track 0 extras: `clang-format`, and introducing sanitizers before the memory track
 - [ ] Learning Inspector v1: stack/heap/object view during debug sessions (debug-adapter tracker)
 - [ ] AST-level concept checks with clang (e.g. "this parameter must be a reference")
 - [ ] A "your projects" portfolio view, and "Create New C++ Project" outside the curriculum
-- [ ] Package and publish the extension (esbuild bundle + curriculum in the VSIX)
 - [ ] Sessions with real learners. Measure where people get stuck using hint and attempt counts, which are already recorded in `progress.json`
 
 ## Phase C — The big tracks
@@ -36,7 +44,7 @@ The curriculum map already shows these as planned:
 
 | Track | Projects |
 |-------|----------|
-| 2 · Memory, lifetime, ownership | dynamic array from scratch, custom container |
+| 2 · Memory, lifetime, ownership (continued) | move semantics, `shared_ptr`/`weak_ptr`, smart pointers from scratch, a container with iterators |
 | 3 · The C++ language | text processing tool, configuration parser |
 | 4 · STL, data structures, algorithms | searchable command system (vector vs. unordered_map, *measured*), inventory app, mini database |
 | 5 · Software engineering | command interpreter, file-system explorer; GoogleTest, clang-tidy, CI, packaging |

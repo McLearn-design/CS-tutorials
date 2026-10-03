@@ -2,50 +2,150 @@
   "name": "cpp-studio",
   "displayName": "C++ Studio",
   "description": "Learn C++ and software engineering by building real projects with a real compiler, CMake, tests and debugger — inside VS Code.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "cpp-studio",
   "license": "MIT",
-  "engines": { "vscode": "^1.90.0" },
-  "categories": ["Education", "Programming Languages"],
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Education",
+    "Programming Languages"
+  ],
   "main": "./dist/extension.js",
-  "activationEvents": ["workspaceContains:.cpp-studio/workspace.json", "onView:cppStudio.curriculum"],
+  "activationEvents": [
+    "onStartupFinished",
+    "workspaceContains:.cpp-studio/workspace.json"
+  ],
   "contributes": {
     "viewsContainers": {
       "activitybar": [
-        { "id": "cppStudio", "title": "C++ Studio", "icon": "media/icon.svg" }
+        {
+          "id": "cppStudio",
+          "title": "C++ Studio",
+          "icon": "media/icon.svg"
+        }
       ]
     },
     "views": {
       "cppStudio": [
-        { "id": "cppStudio.curriculum", "name": "Curriculum" }
+        {
+          "id": "cppStudio.curriculum",
+          "name": "Curriculum"
+        }
       ]
     },
     "viewsWelcome": [
       {
         "view": "cppStudio.curriculum",
-        "contents": "Open a folder to use as your C++ Studio workspace. Your projects and progress will live there.\n[Open Folder](command:vscode.openFolder)\n[Initialize Workspace Here](command:cppStudio.initWorkspace)"
+        "when": "workbenchState == empty",
+        "contents": "Welcome to C++ Studio! You'll learn C++ by building real programs with the real compiler, CMake, tests and debugger.\n\nFirst, create a folder for your projects and progress:\n[Create Learning Workspace](command:cppStudio.createWorkspace)\n[Getting Started Guide](command:cppStudio.gettingStarted)"
+      },
+      {
+        "view": "cppStudio.curriculum",
+        "when": "workbenchState != empty && !cppStudio.active",
+        "contents": "This folder isn't a C++ Studio workspace yet.\n[Use This Folder](command:cppStudio.initWorkspace)\n[Create a New Learning Workspace](command:cppStudio.createWorkspace)\n[Check Toolchain](command:cppStudio.doctor)"
       }
     ],
     "commands": [
-      { "command": "cppStudio.initWorkspace", "title": "Initialize Workspace Here", "category": "C++ Studio" },
-      { "command": "cppStudio.openLesson", "title": "Open Lesson", "category": "C++ Studio" },
-      { "command": "cppStudio.continue", "title": "Continue Where I Left Off", "category": "C++ Studio", "icon": "$(play)" },
-      { "command": "cppStudio.check", "title": "Check Step", "category": "C++ Studio", "icon": "$(check)" },
-      { "command": "cppStudio.hint", "title": "Show Hint", "category": "C++ Studio" },
-      { "command": "cppStudio.resetStep", "title": "Reset Step", "category": "C++ Studio" },
-      { "command": "cppStudio.debug", "title": "Debug Lesson Program", "category": "C++ Studio", "icon": "$(debug-alt)" },
-      { "command": "cppStudio.openTerminal", "title": "Open Terminal in Project", "category": "C++ Studio", "icon": "$(terminal)" },
-      { "command": "cppStudio.doctor", "title": "Check Toolchain", "category": "C++ Studio" },
-      { "command": "cppStudio.refresh", "title": "Refresh", "category": "C++ Studio", "icon": "$(refresh)" }
+      {
+        "command": "cppStudio.initWorkspace",
+        "title": "Initialize Workspace Here",
+        "category": "C++ Studio"
+      },
+      {
+        "command": "cppStudio.openLesson",
+        "title": "Open Lesson",
+        "category": "C++ Studio"
+      },
+      {
+        "command": "cppStudio.continue",
+        "title": "Continue Where I Left Off",
+        "category": "C++ Studio",
+        "icon": "$(play)"
+      },
+      {
+        "command": "cppStudio.check",
+        "title": "Check Step",
+        "category": "C++ Studio",
+        "icon": "$(check)"
+      },
+      {
+        "command": "cppStudio.hint",
+        "title": "Show Hint",
+        "category": "C++ Studio"
+      },
+      {
+        "command": "cppStudio.resetStep",
+        "title": "Reset Step",
+        "category": "C++ Studio"
+      },
+      {
+        "command": "cppStudio.debug",
+        "title": "Debug Lesson Program",
+        "category": "C++ Studio",
+        "icon": "$(debug-alt)"
+      },
+      {
+        "command": "cppStudio.openTerminal",
+        "title": "Open Terminal in Project",
+        "category": "C++ Studio",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "cppStudio.doctor",
+        "title": "Check Toolchain (compiler, CMake, debugger)",
+        "category": "C++ Studio"
+      },
+      {
+        "command": "cppStudio.refresh",
+        "title": "Refresh",
+        "category": "C++ Studio",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "cppStudio.createWorkspace",
+        "title": "Create Learning Workspace",
+        "category": "C++ Studio"
+      },
+      {
+        "command": "cppStudio.checkForUpdates",
+        "title": "Check for Updates",
+        "category": "C++ Studio"
+      },
+      {
+        "command": "cppStudio.gettingStarted",
+        "title": "Getting Started",
+        "category": "C++ Studio"
+      }
     ],
     "menus": {
       "view/title": [
-        { "command": "cppStudio.continue", "when": "view == cppStudio.curriculum", "group": "navigation" },
-        { "command": "cppStudio.refresh", "when": "view == cppStudio.curriculum", "group": "navigation" }
+        {
+          "command": "cppStudio.continue",
+          "when": "view == cppStudio.curriculum",
+          "group": "navigation"
+        },
+        {
+          "command": "cppStudio.refresh",
+          "when": "view == cppStudio.curriculum",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "cppStudio.openLesson",
+          "when": "false"
+        }
       ]
     },
     "keybindings": [
-      { "command": "cppStudio.check", "key": "ctrl+alt+enter", "mac": "cmd+alt+enter", "when": "cppStudio.active" }
+      {
+        "command": "cppStudio.check",
+        "key": "ctrl+alt+enter",
+        "mac": "cmd+alt+enter",
+        "when": "cppStudio.active"
+      }
     ],
     "configuration": {
       "title": "C++ Studio",
@@ -59,13 +159,94 @@
           "type": "boolean",
           "default": false,
           "description": "Allow opening lessons whose prerequisites are not complete."
+        },
+        "cppStudio.updates.checkAutomatically": {
+          "type": "boolean",
+          "default": true,
+          "description": "Check GitHub Releases once a day for a newer version of C++ Studio and offer to install it."
+        },
+        "cppStudio.updates.includePrereleases": {
+          "type": "boolean",
+          "default": false,
+          "description": "Also offer pre-release versions."
+        },
+        "cppStudio.updates.repository": {
+          "type": "string",
+          "default": "McLearn-design/CS-tutorials",
+          "description": "GitHub repository (owner/name) whose releases provide C++ Studio updates."
         }
       }
-    }
+    },
+    "walkthroughs": [
+      {
+        "id": "gettingStarted",
+        "title": "Get Started with C++ Studio",
+        "description": "Set up your tools and start building real C++ programs.",
+        "steps": [
+          {
+            "id": "tools",
+            "title": "Check your C++ tools",
+            "description": "C++ Studio uses the real compiler, CMake and debugger on your computer.\n[Check Toolchain](command:cppStudio.doctor)",
+            "media": {
+              "markdown": "media/walkthrough/tools.md"
+            },
+            "completionEvents": [
+              "onCommand:cppStudio.doctor"
+            ]
+          },
+          {
+            "id": "debugger",
+            "title": "Install a debugger extension",
+            "description": "Breakpoints, stepping and variable inspection in the editor need a C++ debugger extension.\n[Install C/C++ Extension](command:workbench.extensions.installExtension?%22ms-vscode.cpptools%22)\n[Install CodeLLDB](command:workbench.extensions.installExtension?%22vadimcn.vscode-lldb%22)",
+            "media": {
+              "markdown": "media/walkthrough/debugger.md"
+            },
+            "completionEvents": [
+              "extensionInstalled:ms-vscode.cpptools",
+              "extensionInstalled:vadimcn.vscode-lldb"
+            ]
+          },
+          {
+            "id": "workspace",
+            "title": "Create your learning workspace",
+            "description": "A normal folder where your projects and progress live. Everything in it is yours.\n[Create Learning Workspace](command:cppStudio.createWorkspace)",
+            "media": {
+              "markdown": "media/walkthrough/workspace.md"
+            },
+            "completionEvents": [
+              "onCommand:cppStudio.createWorkspace",
+              "onContext:cppStudio.active"
+            ]
+          },
+          {
+            "id": "start",
+            "title": "Start the first lesson",
+            "description": "Open the C++ Studio view in the activity bar, or jump straight in.\n[Start Learning](command:cppStudio.continue)",
+            "media": {
+              "markdown": "media/walkthrough/start.md"
+            },
+            "completionEvents": [
+              "onCommand:cppStudio.continue",
+              "onCommand:cppStudio.openLesson"
+            ]
+          }
+        ]
+      }
+    ]
   },
   "scripts": {
     "bundle-curriculum": "node -e \"require('fs').cpSync('../../curriculum','curriculum',{recursive:true})\""
   },
-  "dependencies": { "@cpp-studio/engine": "0.1.0" },
-  "devDependencies": { "@types/vscode": "~1.90.0" }
+  "dependencies": {
+    "@cpp-studio/engine": "0.1.0"
+  },
+  "devDependencies": {
+    "@types/vscode": "~1.90.0"
+  },
+  "icon": "media/logo.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/McLearn-design/CS-tutorials.git",
+    "directory": "cpp-studio"
+  }
 }

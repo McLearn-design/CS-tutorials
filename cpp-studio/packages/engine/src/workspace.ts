@@ -52,7 +52,7 @@ export class Workspace {
       const dest = path.join(dir, f.path);
       if (fs.existsSync(dest) && !f.overwrite) continue;
       fs.mkdirSync(path.dirname(dest), { recursive: true });
-      fs.copyFileSync(resolveSource(curriculumRoot, lessonDir, f.from), dest);
+      copyIntoProject(resolveSource(curriculumRoot, lessonDir, f.from), dest);
       written.push(f.path);
     }
     return written;
@@ -65,7 +65,7 @@ export class Workspace {
     for (const rel of listFiles(srcDir)) {
       const target = path.join(dest, rel);
       fs.mkdirSync(path.dirname(target), { recursive: true });
-      fs.copyFileSync(path.join(srcDir, rel), target);
+      copyIntoProject(path.join(srcDir, rel), target);
       out.push(rel);
     }
     return out;
@@ -117,10 +117,21 @@ export class Workspace {
     for (const rel of manifest.files) {
       const target = path.join(dir, rel);
       fs.mkdirSync(path.dirname(target), { recursive: true });
-      fs.copyFileSync(path.join(snap, 'files', rel), target);
+      copyIntoProject(path.join(snap, 'files', rel), target);
     }
     return { restored: manifest.files, trashed };
   }
+}
+
+/**
+ * Copy a file into a learner project and stamp it with the current time. Some platforms
+ * (macOS) preserve the source's modification time on copy; an old timestamp would make
+ * make/ninja think the file is unchanged and silently rebuild nothing.
+ */
+function copyIntoProject(src: string, dest: string): void {
+  fs.copyFileSync(src, dest);
+  const now = new Date();
+  fs.utimesSync(dest, now, now);
 }
 
 const SKIP_DIRS = new Set(['build', '.git', 'node_modules', '.cache', 'out', '.vs', '.idea']);

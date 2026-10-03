@@ -3,7 +3,7 @@
 // everything goes through Studio, exactly as the VS Code extension does.
 import * as fs from 'fs';
 import * as path from 'path';
-import { CheckReport, LessonStatus, StepView, Studio, StudioError } from '@cpp-studio/engine';
+import { CheckReport, fetchReleases, LessonStatus, pickUpdate, StepView, Studio, StudioError, toolchainGuide } from '@cpp-studio/engine';
 
 const color = process.stdout.isTTY && !process.env.NO_COLOR;
 const c = (code: string) => (s: string) => (color ? `\x1b[${code}m${s}\x1b[0m` : s);
@@ -31,8 +31,17 @@ Commands
   reset               Restore the project to how it was when this step began
   solution [--apply]  Show the reference solution (or copy it into your project)
   note [text]         Show or set your notes for the current lesson
+  update              Check GitHub for a newer version
+  version             Print the installed version
 
 The workspace defaults to $CPP_STUDIO_WORKSPACE or the current directory.`;
+
+function version(): string {
+  for (const p of [path.join(__dirname, 'package.json'), path.resolve(__dirname, '../../../package.json')]) {
+    try { return JSON.parse(fs.readFileSync(p, 'utf8')).version; } catch { /* try next */ }
+  }
+  return 'unknown';
+}
 
 /** Installed packages ship the curriculum next to the bundle; a source checkout uses the repo's copy. */
 function defaultCurriculum(): string {
@@ -102,6 +111,7 @@ function printReport(studio: Studio, r: CheckReport): void {
   for (const res of r.results) {
     const icon = res.skipped ? dim('-') : res.passed ? green('✓') : red('✗');
     console.log(`${icon} ${res.skipped ? dim(res.label) : res.label}`);
+    if (res.passed && res.message) console.log(yellow(`  note: `) + dim(res.message));
     if (!res.passed && !res.skipped) {
       if (res.message) console.log(`  ${res.message}`);
       if (res.details) console.log(res.details.split('\n').map((l) => dim('  │ ') + l).join('\n'));
@@ -128,6 +138,22 @@ function printReport(studio: Studio, r: CheckReport): void {
 async function main(): Promise<number> {
   const args = parseArgs(process.argv.slice(2));
   if (args.command === 'help' || args.flags.has('help')) { console.log(USAGE); return 0; }
+  if (args.command === 'version' || args.flags.has('version')) { console.log(version()); return 0; }
+  if (args.command === 'update') {
+    const current = version();
+    let releases;
+    try {
+      releases = await fetchReleases(undefined, process.env.GITHUB_TOKEN || process.env.GH_TOKEN);
+    } catch (e) {
+      throw new StudioError(`Could not check for updates: ${(e as Error).message}`);
+    }
+    const update = pickUpdate(releases, current, { assetPattern: /^cpp-studio-cli-.*\.tgz$/ });
+    if (!update) { console.log(`cpp-studio ${current} is the latest version.`); return 0; }
+    console.log(`${bold(`cpp-studio ${update.version}`)} is available (you have ${current}).`);
+    if (update.assetUrl) console.log(`Install it with:\n  npm install -g ${update.assetUrl}`);
+    console.log(dim(`Release notes: ${update.notesUrl}`));
+    return 0;
+  }
 
   const studio = await Studio.open({ workspaceRoot: args.workspace, curriculumRoot: args.curriculum });
 
@@ -142,6 +168,10 @@ async function main(): Promise<number> {
       row('debugger', !!tc.debugger, `${tc.debugger?.kind} — ${tc.debugger?.path}`, 'not found: install gdb or lldb (needed from the debugger lesson on)');
       row('git', !!tc.git, `${tc.git?.path}`, 'not found: install Git (needed in the software-engineering track)');
       console.log(dim(`\nworkspace:  ${studio.workspace.root}\ncurriculum: ${studio.curriculum.root}`));
+      if (!tc.compiler || !tc.cmake || !tc.debugger) {
+        const guide = toolchainGuide(tc);
+        console.log('\n' + renderMarkdown(guide.slice(guide.indexOf('## How to install'))));
+      }
       return tc.compiler && tc.cmake ? 0 : 1;
     }
 

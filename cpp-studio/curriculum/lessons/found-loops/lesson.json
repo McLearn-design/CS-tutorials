@@ -1,0 +1,94 @@
+{
+  "id": "found-loops",
+  "title": "Loops: summarising a stream of numbers",
+  "summary": "Repeat work with while and for: read input until it runs out, compute running statistics, handle the empty case, and nest loops.",
+  "mode": "incremental",
+  "project": "stats",
+  "concepts": ["while", "for", "loop condition", "end of input", "running total", "edge cases", "off-by-one", "nested loops", "++i"],
+  "prerequisites": ["found-gcd"],
+  "intro": "intro.md",
+  "build": {
+    "targets": {
+      "stats": { "system": "direct", "sources": ["stats.cpp"], "output": "stats" },
+      "table": { "system": "direct", "sources": ["table.cpp"], "output": "table" }
+    }
+  },
+  "files": [{ "path": "stats.cpp", "from": "starter/stats.cpp" }],
+  "steps": [
+    {
+      "id": "while-read",
+      "title": "Read until the input runs out",
+      "kind": "code",
+      "content": "steps/01-while-read.md",
+      "open": ["stats.cpp"],
+      "commands": ["g++ -std=c++20 -Wall -Wextra stats.cpp -o stats && echo \"3 5 10\" | ./stats"],
+      "checks": [
+        { "type": "source", "path": "stats.cpp", "pattern": "\\bwhile\\s*\\(", "label": "Uses a while loop" },
+        { "type": "compiles", "noWarnings": true },
+        { "type": "output", "stdin": "3 5 10\n", "expect": { "containsAll": ["count: 3", "sum: 18"] } },
+        { "type": "output", "stdin": "1.5\n2.5\n", "expect": { "containsAll": ["count: 2", "sum: 4"] } }
+      ],
+      "hints": [
+        "`std::cin >> value` is itself a condition: it is true when a value was read, false when input ends or isn't a number.",
+        "```cpp\nwhile (std::cin >> value) {\n    ++count;\n    sum += value;\n}\n```"
+      ],
+      "solution": "solution/while-read"
+    },
+    {
+      "id": "min-max",
+      "title": "Smallest, largest, average — and nothing at all",
+      "kind": "code",
+      "content": "steps/02-min-max.md",
+      "open": ["stats.cpp"],
+      "checks": [
+        { "type": "compiles", "noWarnings": true },
+        { "type": "output", "stdin": "3 5 10\n", "expect": { "containsAll": ["count: 3", "sum: 18", "min: 3", "max: 10", "average: 6"] } },
+        { "type": "output", "stdin": "-2.5 4\n", "expect": { "containsAll": ["min: -2.5", "max: 4", "average: 0.75"] } },
+        { "type": "output", "stdin": "7\n", "expect": { "containsAll": ["min: 7", "max: 7", "average: 7"] } },
+        { "type": "output", "stdin": "", "expect": { "contains": "no numbers" }, "label": "Empty input prints \"no numbers\"" }
+      ],
+      "hints": [
+        "What should `min` start as? Not 0 — then all-positive input would report min 0. Use the *first* value you read: `if (count == 0 || value < min) min = value;`",
+        "Check `count == 0` after the loop and print `no numbers` instead of dividing by zero."
+      ],
+      "solution": "solution/min-max"
+    },
+    {
+      "id": "off-by-one",
+      "title": "Counting iterations",
+      "kind": "quiz",
+      "content": "steps/03-off-by-one.md",
+      "quiz": {
+        "question": "How many times does the body of `for (int i = 1; i < 10; ++i) { ... }` run?",
+        "options": ["10", "9", "11", "It depends on the compiler"],
+        "answer": 1,
+        "explanations": [
+          "Count them: i takes the values 1, 2, …, 9. When i becomes 10 the condition `i < 10` is false and the loop stops before running the body.",
+          "Right: 1 through 9. A loop `for (int i = a; i < b; ++i)` runs exactly `b - a` times. This *half-open* range [a, b) is the convention everywhere in C++ — indices `0 .. size()-1`, iterators `begin()` to `end()` — precisely because it makes counting easy.",
+          "That would need `i <= 10` starting from 0. Off-by-one errors are the most common loop bug; the half-open convention is designed to avoid them.",
+          "It is fully defined by the language: initialise once, test the condition before each iteration, run the body, then the increment."
+        ]
+      }
+    },
+    {
+      "id": "table",
+      "title": "Challenge: a multiplication table",
+      "kind": "challenge",
+      "content": "steps/04-table.md",
+      "commands": ["g++ -std=c++20 -Wall -Wextra table.cpp -o table && echo 4 | ./table"],
+      "checks": [
+        { "type": "fileExists", "path": "table.cpp" },
+        { "type": "compiles", "target": "table", "noWarnings": true },
+        { "type": "output", "target": "table", "stdin": "3\n", "expect": { "equals": "1 2 3\n2 4 6\n3 6 9" } },
+        { "type": "output", "target": "table", "stdin": "1\n", "expect": { "equals": "1" } },
+        { "type": "output", "target": "table", "stdin": "5\n", "expect": { "contains": "5 10 15 20 25" } },
+        { "type": "output", "target": "table", "stdin": "0\n", "expect": { "contains": "n must be a positive whole number" }, "exitCode": 1 }
+      ],
+      "hints": [
+        "One loop for rows; *inside* it, another loop for columns. After the inner loop finishes, print `'\\n'`.",
+        "No trailing space: print a space *before* every number except the first in a row (`if (col > 1)`)."
+      ],
+      "solution": "solution/table"
+    }
+  ]
+}

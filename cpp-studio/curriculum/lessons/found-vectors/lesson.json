@@ -1,0 +1,126 @@
+{
+  "id": "found-vectors",
+  "title": "std::vector and algorithms: a grade book",
+  "summary": "Store any number of values in a std::vector, process them with loops and standard algorithms (accumulate, sort, count_if), and meet your first lambda.",
+  "mode": "incremental",
+  "project": "gradebook",
+  "concepts": ["std::vector", "push_back", "size / empty", "indexing", "iterators: begin/end", "std::accumulate", "std::sort", "pass by value vs const&", "lambda", "std::count_if"],
+  "prerequisites": ["found-strings"],
+  "intro": "intro.md",
+  "build": {
+    "default": "tests",
+    "targets": {
+      "grades": { "system": "cmake", "output": "grades" },
+      "tests": { "system": "cmake", "output": "grades_tests" },
+      "report-acceptance": {
+        "system": "direct",
+        "sources": ["lesson:acceptance/report_acceptance.cpp", "shared:test_main.cpp", "grades.cpp"],
+        "includeDirs": [".", "shared:"],
+        "output": "report_acceptance"
+      }
+    }
+  },
+  "files": [
+    { "path": "CMakeLists.txt", "from": "starter/CMakeLists.txt" },
+    { "path": "grades.h", "from": "starter/grades.h" },
+    { "path": "grades.cpp", "from": "starter/grades.cpp" },
+    { "path": "main.cpp", "from": "starter/main.cpp" },
+    { "path": "tests/studio_test.hpp", "from": "shared:studio_test.hpp" },
+    { "path": "tests/test_main.cpp", "from": "shared:test_main.cpp" }
+  ],
+  "steps": [
+    {
+      "id": "read-scores",
+      "title": "A list that grows",
+      "kind": "code",
+      "content": "steps/01-read-scores.md",
+      "open": ["main.cpp"],
+      "checks": [
+        { "type": "source", "path": "main.cpp", "pattern": "push_back\\s*\\(", "label": "Appends scores with push_back" },
+        { "type": "compiles", "target": "grades", "noWarnings": true },
+        { "type": "output", "target": "grades", "stdin": "90 72 85\n", "expect": { "containsAll": ["count: 3", "scores: 90 72 85"] } },
+        { "type": "output", "target": "grades", "stdin": "", "expect": { "contains": "count: 0" } }
+      ],
+      "hints": [
+        "`std::vector<int> scores;` then inside a `while (std::cin >> score)` loop: `scores.push_back(score);`",
+        "Print with a range-based for: `for (int s : scores) std::cout << ' ' << s;`"
+      ],
+      "solution": "solution/read-scores"
+    },
+    {
+      "id": "average",
+      "title": "Average, with an algorithm",
+      "kind": "code",
+      "content": "steps/02-average.md",
+      "files": [{ "path": "tests/average_test.cpp", "from": "provided/average_test.cpp", "overwrite": true }],
+      "open": ["grades.cpp", "tests/average_test.cpp"],
+      "checks": [
+        { "type": "tests", "target": "tests", "requireTests": ["average_of_several_scores", "average_of_one_score_is_that_score", "average_is_not_integer_division", "average_of_nothing_throws"] }
+      ],
+      "hints": [
+        "`if (scores.empty()) throw std::invalid_argument(\"no scores\");`",
+        "`std::accumulate(scores.begin(), scores.end(), 0.0)` — the `0.0` (a double) makes the sum a double. With `0` it would be an int.",
+        "Divide by `static_cast<double>(scores.size())`."
+      ],
+      "solution": "solution/average"
+    },
+    {
+      "id": "median",
+      "title": "Median: sorting a copy",
+      "kind": "code",
+      "content": "steps/03-median.md",
+      "files": [{ "path": "tests/median_test.cpp", "from": "provided/median_test.cpp", "overwrite": true }],
+      "open": ["grades.cpp", "tests/median_test.cpp"],
+      "checks": [
+        { "type": "tests", "target": "tests", "requireTests": ["median_of_odd_count_is_middle_value", "median_of_even_count_averages_the_middle_two", "median_does_not_reorder_the_callers_scores", "median_of_nothing_throws"] }
+      ],
+      "hints": [
+        "`std::sort(scores.begin(), scores.end());` sorts the vector in place — fine, because `median` received its own copy.",
+        "With `n` sorted values and `mid = n / 2`: odd `n` → `scores[mid]`; even `n` → `(scores[mid - 1] + scores[mid]) / 2.0`."
+      ],
+      "solution": "solution/median"
+    },
+    {
+      "id": "why-copy",
+      "title": "Why does median take a copy?",
+      "kind": "quiz",
+      "content": "steps/04-why-copy.md",
+      "quiz": {
+        "question": "`average` takes `const std::vector<int>&` but `median` takes `std::vector<int>` (by value). Why is that the right choice for median?",
+        "options": [
+          "It's a mistake — everything should be passed by const reference.",
+          "median needs to sort the values. Taking a copy lets it sort freely without changing the caller's vector — and it needs a copy anyway, so taking one by value costs nothing extra.",
+          "Vectors can't be sorted through a reference.",
+          "Passing by value is faster for vectors."
+        ],
+        "answer": 1,
+        "explanations": [
+          "`const&` is the right default for read-only access. But median *modifies* the data (it sorts), so const& won't work — and plain `&` would scramble the caller's data.",
+          "Exactly. Rule of thumb: read-only → `const T&`; need your own copy anyway → `T` by value; need to change the caller's object → `T&`. The test `median_does_not_reorder_the_callers_scores` checks this contract.",
+          "They can — through a non-const reference. But then the caller's vector would be re-ordered, which would surprise them.",
+          "Copying a vector copies every element: it's slower, not faster. Here we accept the cost because sorting needs a copy we can modify."
+        ]
+      }
+    },
+    {
+      "id": "report",
+      "title": "Challenge: the full report",
+      "kind": "challenge",
+      "content": "steps/05-report.md",
+      "open": ["grades.cpp", "main.cpp"],
+      "checks": [
+        { "type": "tests", "target": "tests", "label": "Your tests still pass" },
+        { "type": "tests", "target": "report-acceptance", "label": "Hidden tests for letter_grades and count_at_least pass" },
+        { "type": "compiles", "target": "grades", "noWarnings": true },
+        { "type": "output", "target": "grades", "stdin": "90 72 85 55\n", "expect": { "containsAll": ["count: 4", "average: 75.5", "median: 78.5", "grades: A C B F", "passed: 3"] } },
+        { "type": "output", "target": "grades", "stdin": "", "expect": { "contains": "no scores" } }
+      ],
+      "hints": [
+        "letter_grades: loop over the scores, `push_back` a letter chosen with an `if / else if` chain. Check the highest grade first.",
+        "count_at_least with an algorithm: `std::count_if(scores.begin(), scores.end(), [threshold](int s) { return s >= threshold; })` returns a count — convert it with `static_cast<int>`.",
+        "In main, check `scores.empty()` before calling average/median, which throw on empty input."
+      ],
+      "solution": "solution/report"
+    }
+  ]
+}

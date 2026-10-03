@@ -1,7 +1,7 @@
 {
   "name": "cpp-studio",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A C++ development environment that teaches through real projects, real compilers and real tools.",
   "workspaces": [
     "packages/engine",

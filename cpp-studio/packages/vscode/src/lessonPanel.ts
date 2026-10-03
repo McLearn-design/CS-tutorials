@@ -76,7 +76,7 @@ export class LessonPanel {
       quiz = `<section class="quiz"><h3>${await md(step.quiz.question)}</h3>${step.quiz.options.map((o, i) =>
         `<button class="option" data-answer="${i}">${String.fromCharCode(65 + i)}. ${esc(o).replace(/`([^`]+)`/g, '<code>$1</code>')}</button>`).join('')}</section>`;
       if (chosen?.quizFeedback) {
-        quiz += `<div class="feedback ${chosen.passed ? 'ok' : 'bad'}">${await md(chosen.quizFeedback)}</div>`;
+        quiz += `<div id="feedback" class="feedback ${chosen.passed ? 'ok' : 'bad'}">${await md(chosen.quizFeedback)}</div>`;
       }
     }
 
@@ -95,9 +95,10 @@ export class LessonPanel {
         const coaching = (await Promise.all((r.coaching ?? []).map(async (co) => `<div class="coach"><b>${esc(co.title)}</b>${await md(co.explanation)}</div>`))).join('');
         return `<li class="${cls}"><span class="icon">${icon}</span><div><div>${esc(r.label)}</div>` +
           (r.message && !r.passed && !r.skipped ? `<div class="msg">${esc(r.message)}</div>` : '') +
+          (r.message && r.passed ? `<div class="note">${esc(r.message)}</div>` : '') +
           (r.details && !r.passed ? `<pre>${esc(r.details)}</pre>` : '') + coaching + '</div></li>';
       }));
-      results = `<section class="results"><h3>${report.passed ? 'All checks passed' : 'Checks'}</h3><ul>${items.join('')}</ul></section>`;
+      results = `<section id="feedback" class="results"><h3>${report.passed ? 'All checks passed' : 'Checks'}</h3><ul>${items.join('')}</ul></section>`;
     }
 
     const files = (step.open ?? []).map((f) => `<button class="link" data-open="${esc(f)}">${esc(f)}</button>`).join(' ');
@@ -122,7 +123,8 @@ export class LessonPanel {
   button:disabled { opacity: .5; cursor: default; }
   button.link { background: none; color: var(--vscode-textLink-foreground); padding: 0 4px; }
   pre, code { font-family: var(--vscode-editor-font-family); }
-  pre { background: var(--vscode-textCodeBlock-background); padding: 8px 10px; border-radius: 4px; overflow-x: auto; white-space: pre-wrap; }
+  pre { background: var(--vscode-textCodeBlock-background); padding: 8px 10px; border-radius: 4px; overflow-x: auto; white-space: pre; }
+  .results pre, .hint pre { white-space: pre-wrap; }
   table { border-collapse: collapse; } td, th { border: 1px solid var(--vscode-panel-border); padding: 3px 8px; text-align: left; }
   blockquote { margin: 0; padding: 4px 12px; border-left: 3px solid var(--vscode-textBlockQuote-border); background: var(--vscode-textBlockQuote-background); }
   .files { margin: 6px 0; font-size: .9em; opacity: .9; }
@@ -134,7 +136,7 @@ export class LessonPanel {
   .results ul { list-style: none; padding: 0; } .results li { display: flex; gap: 8px; margin: 6px 0; }
   .results .icon { width: 1.2em; font-weight: bold; } .results .ok .icon { color: var(--vscode-testing-iconPassed); }
   .results .bad .icon { color: var(--vscode-testing-iconFailed); } .results .skip { opacity: .5; }
-  .msg { margin-top: 2px; } .coach { margin-top: 6px; padding: 6px 10px; border-left: 3px solid var(--vscode-charts-yellow); }
+  .msg { margin-top: 2px; } .note { margin-top: 2px; opacity: .8; font-size: .92em; border-left: 3px solid var(--vscode-charts-yellow); padding-left: 8px; } .coach { margin-top: 6px; padding: 6px 10px; border-left: 3px solid var(--vscode-charts-yellow); }
   .coach p { margin: 4px 0; }
   .hint { padding: 6px 10px; margin: 8px 0; border-left: 3px solid var(--vscode-charts-blue); }
   .busy { opacity: .6; pointer-events: none; }
@@ -156,11 +158,11 @@ export class LessonPanel {
   ${files ? `<div class="files">Files: ${files}</div>` : ''}
 </header>
 ${doneBanner}
+${results}
+${hints}
 <main>${body}</main>
 ${commands ? `<section><h3>Commands</h3>${commands}</section>` : ''}
 ${quiz}
-${hints}
-${results}
 <script nonce="${nonce}">
   const vscode = acquireVsCodeApi();
   document.addEventListener('click', (e) => {
@@ -175,6 +177,7 @@ ${results}
     if (e.data.type === 'busy') document.body.classList.toggle('busy', e.data.busy);
   });
   ${this.busy ? "document.body.classList.add('busy');" : ''}
+  ${report && report.stepId === step.id ? "document.getElementById('feedback')?.scrollIntoView({ block: 'center' });" : ''}
 </script>
 </body></html>`;
   }

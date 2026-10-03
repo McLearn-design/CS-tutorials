@@ -1,0 +1,126 @@
+{
+  "id": "found-strings",
+  "title": "Text: building a word counter",
+  "summary": "Work with std::string and char: transform text, split it into words, read whole lines, and write a palindrome checker judged by hidden tests.",
+  "mode": "incremental",
+  "project": "words",
+  "concepts": ["std::string", "char", "range-based for", "const reference", "std::getline", "<cctype>", "std::vector (first look)", "test file per feature"],
+  "prerequisites": ["found-loops"],
+  "intro": "intro.md",
+  "build": {
+    "default": "tests",
+    "targets": {
+      "words": { "system": "cmake", "output": "words" },
+      "tests": { "system": "cmake", "output": "text_tests" },
+      "palindrome-acceptance": {
+        "system": "direct",
+        "sources": ["lesson:acceptance/palindrome_acceptance.cpp", "shared:test_main.cpp", "text.cpp"],
+        "includeDirs": [".", "shared:"],
+        "output": "palindrome_acceptance"
+      }
+    }
+  },
+  "files": [
+    { "path": "CMakeLists.txt", "from": "starter/CMakeLists.txt" },
+    { "path": "text.h", "from": "starter/text.h" },
+    { "path": "text.cpp", "from": "starter/text.cpp" },
+    { "path": "main.cpp", "from": "starter/main.cpp" },
+    { "path": "tests/studio_test.hpp", "from": "shared:studio_test.hpp" },
+    { "path": "tests/test_main.cpp", "from": "shared:test_main.cpp" }
+  ],
+  "steps": [
+    {
+      "id": "to-lower",
+      "title": "Characters and loops over strings",
+      "kind": "code",
+      "content": "steps/01-to-lower.md",
+      "files": [{ "path": "tests/to_lower_test.cpp", "from": "provided/to_lower_test.cpp", "overwrite": true }],
+      "open": ["text.cpp", "tests/to_lower_test.cpp", "text.h"],
+      "commands": ["cmake -S . -B build", "cmake --build build", "./build/text_tests"],
+      "checks": [
+        { "type": "tests", "target": "tests", "requireTests": ["to_lower_changes_capitals", "to_lower_leaves_other_characters_alone", "to_lower_of_empty_string_is_empty", "to_lower_does_not_modify_its_argument"] }
+      ],
+      "hints": [
+        "Make a copy (`std::string result = text;`), change the copy's characters, return it.",
+        "`for (char& c : result)` — the `&` makes `c` refer to the actual character inside `result`, so assigning to `c` changes the string.",
+        "`c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));`"
+      ],
+      "solution": "solution/to-lower"
+    },
+    {
+      "id": "split-words",
+      "title": "Splitting text into words",
+      "kind": "code",
+      "content": "steps/02-split-words.md",
+      "files": [{ "path": "tests/split_words_test.cpp", "from": "provided/split_words_test.cpp", "overwrite": true }],
+      "open": ["text.cpp", "tests/split_words_test.cpp"],
+      "checks": [
+        { "type": "tests", "target": "tests", "requireTests": ["split_words_on_spaces_and_punctuation", "split_words_ignores_repeated_separators", "split_words_of_empty_text_is_empty", "split_words_keeps_digits"] }
+      ],
+      "hints": [
+        "Keep a `std::string current`. For each character: if it's a letter or digit, append it (`current += c`). Otherwise, if `current` isn't empty, it's a finished word — `push_back` it and `clear()` it.",
+        "Don't forget the last word: after the loop, `current` may still hold one."
+      ],
+      "solution": "solution/split-words"
+    },
+    {
+      "id": "count",
+      "title": "A command-line word counter",
+      "kind": "code",
+      "content": "steps/03-count.md",
+      "open": ["main.cpp"],
+      "commands": ["cmake --build build && printf 'Hello world\\nC++ is fun\\n' | ./build/words"],
+      "checks": [
+        { "type": "compiles", "target": "words", "noWarnings": true },
+        { "type": "output", "target": "words", "stdin": "Hello world\nC++ is fun\n", "expect": { "containsAll": ["lines: 2", "words: 5", "characters: 21"] } },
+        { "type": "output", "target": "words", "stdin": "", "expect": { "containsAll": ["lines: 0", "words: 0", "characters: 0"] } },
+        { "type": "output", "target": "words", "stdin": "one\n\n  two three  \n", "expect": { "containsAll": ["lines: 3", "words: 3", "characters: 16"] } }
+      ],
+      "hints": [
+        "`while (std::getline(std::cin, line))` reads one whole line per iteration, without the newline.",
+        "Characters per line: `line.size()`. Words per line: `split_words(line).size()`."
+      ],
+      "solution": "solution/count"
+    },
+    {
+      "id": "char-vs-string",
+      "title": "Single quotes, double quotes",
+      "kind": "quiz",
+      "content": "steps/04-char-vs-string.md",
+      "quiz": {
+        "question": "What is the difference between `'a'` and `\"a\"` in C++?",
+        "options": [
+          "None — both are one-character strings, like in Python.",
+          "`'a'` is a single `char` (one byte holding a number, 97); `\"a\"` is a string literal: an array of two chars, 'a' followed by a terminating '\\0'.",
+          "`'a'` is a `std::string`; `\"a\"` is a `char`.",
+          "`\"a\"` is a `std::string` object."
+        ],
+        "answer": 1,
+        "explanations": [
+          "In Python they're interchangeable. In C++ they are different *types*, and mixing them up produces confusing compiler errors.",
+          "Right. A `char` is a small integer — that's why `std::tolower` works on it and why `'a' + 1` is `98`. A string literal is a fixed array of `char`s ending with `'\\0'`; it becomes a `std::string` only when you convert it, e.g. `std::string s = \"a\";`.",
+          "It's the other way round, and neither is a `std::string` by itself.",
+          "A literal like `\"a\"` is a plain array of characters (`const char[2]`), not a `std::string`. That's why `\"Hello, \" + \"world\"` doesn't compile but `std::string(\"Hello, \") + \"world\"` does."
+        ]
+      }
+    },
+    {
+      "id": "palindrome",
+      "title": "Challenge: palindromes",
+      "kind": "challenge",
+      "content": "steps/05-palindrome.md",
+      "checks": [
+        { "type": "fileExists", "path": "tests/palindrome_test.cpp" },
+        { "type": "source", "path": "tests/palindrome_test.cpp", "pattern": "(\\bTEST\\s*\\([\\s\\S]*){3}", "label": "tests/palindrome_test.cpp has at least 3 tests" },
+        { "type": "tests", "target": "tests", "label": "Your tests pass" },
+        { "type": "tests", "target": "palindrome-acceptance", "label": "Hidden acceptance tests pass", "failMessage": "Your tests pass, but the hidden tests found a case is_palindrome gets wrong. Think about capital letters, punctuation, empty text and single characters." }
+      ],
+      "hints": [
+        "First build a cleaned-up string holding only the lower-cased letters and digits. Then compare it with itself from both ends.",
+        "Two indices: `i` from the front, `j` from the back. While they haven't met, compare `letters[i]` with `letters[j - 1]`.",
+        "Careful with `std::size_t` (unsigned) and going below zero: `j - 1` when `j == 0` wraps around to a huge number. Using `i + 1 < j` as the loop condition avoids it."
+      ],
+      "solution": "solution/palindrome"
+    }
+  ]
+}

@@ -8,7 +8,7 @@ take someone who has edited one Python script to the point where they can design
 ship a serious C++ application.
 
 This directory has the first implementation: a UI-agnostic **learning engine**, two front ends that share it (a
-**VS Code extension** and a **CLI**), and the first **seven lessons**. Each lesson is checked against real compilers in CI.
+**VS Code extension** and a **CLI**), and **13 lessons**. Each lesson is checked against real compilers in CI.
 
 ```text
 ┌───────────────────────────┐   ┌──────────────────────┐
@@ -33,8 +33,11 @@ artifact of any `cpp-studio-release` workflow run):
 
 | What | Install | Update |
 |------|---------|--------|
-| VS Code extension | `code --install-extension cpp-studio-<version>.vsix` (or Extensions view → `…` → *Install from VSIX…*) | Install the newer `.vsix` the same way; it replaces the old one. Automatic if installed from the Marketplace |
-| Command-line app | `npm install -g cpp-studio-cli-<version>.tgz`, then run `cpp-studio` | Install the newer `.tgz`, or `npm update -g cpp-studio-cli` if installed from npm |
+| VS Code extension | `code --install-extension cpp-studio-<version>.vsix` (or Extensions view → `…` → *Install from VSIX…*) | **Built in:** once a day the extension checks this repository's GitHub Releases and offers to install a newer version in one click (*C++ Studio: Check for Updates* to check now) |
+| Command-line app | `npm install -g cpp-studio-cli-<version>.tgz`, then run `cpp-studio` | `cpp-studio update` tells you if there's a newer version and prints the install command |
+
+After installing the extension, a **Get Started with C++ Studio** walkthrough opens. It checks your tools, creates
+`~/CppStudio` for your projects and progress, and starts lesson one. See [TESTING.md](TESTING.md) for a guided tour.
 
 You still need a C++ compiler and CMake on the machine. Run `cpp-studio doctor` or *C++ Studio: Check Toolchain* to see
 what's missing. The lessons ship inside both packages, and your progress lives in your workspace folder, so updating
@@ -97,9 +100,16 @@ A learner can:
 | 1 · Foundations | Values, types and a first calculator | incremental | `calculator` |
 | | Functions, headers and your first unit tests | incremental | `calculator` (continued) |
 | | Independent work: GCD and LCM | independent | `calculator` (continued) |
+| | Loops: summarising a stream of numbers | incremental | `stats` |
+| | Text: building a word counter | incremental | `words` |
+| | std::vector and algorithms: a grade book | incremental | `gradebook` |
+| | Structs, references and const: an inventory | incremental | `inventory` |
+| 2 · Memory | Object lifetime: the stack, the heap, and who cleans up | guided | `lifetime` |
+| | Build your own dynamic array | incremental | `dynarray` |
 
-Tracks 2–10 (memory, the language, STL & DSA, software engineering, systems/OS, networking, graphics/Vulkan,
-game engine, advanced C++) appear on the curriculum map as *planned*. See [docs/ROADMAP.md](docs/ROADMAP.md).
+Track 2 lessons build with AddressSanitizer and UndefinedBehaviorSanitizer where the toolchain supports them.
+Tracks 3–10 (the language, STL & DSA, software engineering, systems/OS, networking, graphics/Vulkan, game engine,
+advanced C++) appear on the curriculum map as *planned*. See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Repository layout
 

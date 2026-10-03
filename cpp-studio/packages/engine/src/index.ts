@@ -7,3 +7,5 @@ export { parseTestOutput, TestSummary } from './testing';
 export { stripSource } from './source';
 export { Workspace, listFiles } from './workspace';
 export { Progress, LessonProgress, ProgressStore } from './progress';
+export { compareVersions, pickUpdate, fetchReleases, GitHubRelease, AvailableUpdate, DEFAULT_UPDATE_REPOSITORY, RELEASE_TAG_PREFIX } from './updates';
+export { toolchainGuide } from './guide';

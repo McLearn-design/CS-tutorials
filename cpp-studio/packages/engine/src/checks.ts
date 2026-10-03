@@ -136,7 +136,7 @@ export async function runCheck(check: Check, ctx: CheckContext): Promise<CheckRe
           details: warnings.map(formatDiag).join('\n'), diagnostics: b.diagnostics, coaching: coachDiagnostics(warnings),
         };
       }
-      return { label, passed: true, diagnostics: b.diagnostics };
+      return { label, passed: true, diagnostics: b.diagnostics, message: b.note };
     }
 
     case 'diagnostics': {
@@ -161,7 +161,7 @@ export async function runCheck(check: Check, ctx: CheckContext): Promise<CheckRe
       }
       const { ok, expected } = matchOutput(out, check.expect, check.trim ?? true);
       const wantCode = check.exitCode ?? 0;
-      if (ok && r.exitCode === wantCode) return { label, passed: true };
+      if (ok && r.exitCode === wantCode) return { label, passed: true, message: b.note };
       if (ok) return fail(`The output is right, but the program exited with code ${r.exitCode} (expected ${wantCode}).`);
       return fail('The program ran, but its output is not what was expected.', {
         details: `${check.stdin !== undefined ? `Input:\n${indent(check.stdin)}\n` : ''}Expected:\n${indent(expected)}\nActual:\n${indent(normalise(out, true) || '(no output)')}` +
@@ -189,7 +189,7 @@ export async function runCheck(check: Check, ctx: CheckContext): Promise<CheckRe
       if (check.minTests && s.passed < check.minTests) {
         return fail(`All ${s.passed} test${s.passed === 1 ? '' : 's'} pass, but this step needs at least ${check.minTests}.`);
       }
-      return { label: `${label} (${s.passed} passed)`, passed: true };
+      return { label: `${label} (${s.passed} passed)`, passed: true, message: b.note };
     }
   }
 }

@@ -1,102 +1,173 @@
 {
   "title": "C++ Studio",
-  "description": "From \"I have modified a Python script once\" to designing, debugging, testing, profiling and shipping serious C++ software — by building real projects with real tools.",
+  "description": "From \"I have modified a Python script once\" to designing, debugging, testing, profiling and shipping serious C++ software \u2014 by building real projects with real tools.",
   "tracks": [
     {
       "id": "environment",
-      "title": "Track 0 — The Development Environment",
+      "title": "Track 0 \u2014 The Development Environment",
       "description": "Source files, the compiler, the linker, diagnostics, CMake and the debugger. Short, but everything else stands on it.",
       "status": "available",
-      "lessons": ["env-first-program", "env-diagnostics", "env-cmake", "env-debugger"]
+      "lessons": [
+        "env-first-program",
+        "env-diagnostics",
+        "env-cmake",
+        "env-debugger"
+      ]
     },
     {
       "id": "foundations",
-      "title": "Track 1 — C++ Foundations",
-      "description": "Types, expressions, control flow, functions, headers and unit tests — taught by growing a calculator into a real, tested program.",
+      "title": "Track 1 \u2014 C++ Foundations",
+      "description": "Types, expressions, loops, functions, strings, vectors, structs and references, headers and unit tests \u2014 taught by building small, tested tools.",
       "status": "available",
-      "requires": ["environment"],
-      "lessons": ["found-values", "found-functions", "found-gcd"]
+      "requires": [
+        "environment"
+      ],
+      "lessons": [
+        "found-values",
+        "found-functions",
+        "found-gcd",
+        "found-loops",
+        "found-strings",
+        "found-vectors",
+        "found-structs"
+      ]
     },
     {
       "id": "memory",
-      "title": "Track 2 — Memory, Lifetime and Ownership",
-      "description": "Stack and heap, addresses, references, pointers, object lifetime, RAII, constructors/destructors, move semantics and smart pointers — made visible with the Learning Inspector.",
-      "status": "planned",
-      "requires": ["foundations"],
-      "lessons": [],
-      "projects": ["Dynamic array from scratch", "Custom container"]
+      "title": "Track 2 \u2014 Memory, Lifetime and Ownership",
+      "description": "Stack and heap, object lifetime, constructors and destructors, ownership, RAII and smart pointers \u2014 with AddressSanitizer catching every memory mistake. More lessons coming: move semantics, smart pointers in depth, a container with iterators.",
+      "status": "available",
+      "requires": [
+        "foundations"
+      ],
+      "lessons": [
+        "mem-lifetime",
+        "mem-dynarray"
+      ],
+      "projects": [
+        "Smart pointers from scratch",
+        "Custom container with iterators"
+      ]
     },
     {
       "id": "language",
-      "title": "Track 3 — The C++ Language",
-      "description": "Classes and invariants, composition and inheritance, polymorphism, lambdas, and modern C++ (optional, variant, expected, span, ranges, concepts) — including when not to use them.",
+      "title": "Track 3 \u2014 The C++ Language",
+      "description": "Classes and invariants, composition and inheritance, polymorphism, lambdas, and modern C++ (optional, variant, expected, span, ranges, concepts) \u2014 including when not to use them.",
       "status": "planned",
-      "requires": ["memory"],
+      "requires": [
+        "memory"
+      ],
       "lessons": [],
-      "projects": ["Text processing tool", "Configuration parser"]
+      "projects": [
+        "Text processing tool",
+        "Configuration parser"
+      ]
     },
     {
       "id": "stl-dsa",
-      "title": "Track 4 — The Standard Library, Data Structures and Algorithms",
-      "description": "Containers, iterators, algorithms and complexity — discovered by measuring real programs, not memorised from a table.",
+      "title": "Track 4 \u2014 The Standard Library, Data Structures and Algorithms",
+      "description": "Containers, iterators, algorithms and complexity \u2014 discovered by measuring real programs, not memorised from a table.",
       "status": "planned",
-      "requires": ["language"],
+      "requires": [
+        "language"
+      ],
       "lessons": [],
-      "projects": ["Searchable command system", "Inventory application", "Mini database"]
+      "projects": [
+        "Searchable command system",
+        "Inventory application",
+        "Mini database"
+      ]
     },
     {
       "id": "engineering",
-      "title": "Track 5 — Software Engineering",
+      "title": "Track 5 \u2014 Software Engineering",
       "description": "Git workflows, testable design, GoogleTest, static analysis, sanitizers, formatting, CI, packaging and releases.",
       "status": "planned",
-      "requires": ["foundations"],
+      "requires": [
+        "foundations"
+      ],
       "lessons": [],
-      "projects": ["Command interpreter", "File-system explorer"]
+      "projects": [
+        "Command interpreter",
+        "File-system explorer"
+      ]
     },
     {
       "id": "systems",
-      "title": "Track 6 — Systems Programming and Operating Systems",
-      "description": "Processes, address spaces, file descriptors, pipes, threads, mutexes, condition variables, thread pools and virtual memory — on Windows, Linux and macOS.",
+      "title": "Track 6 \u2014 Systems Programming and Operating Systems",
+      "description": "Processes, address spaces, file descriptors, pipes, threads, mutexes, condition variables, thread pools and virtual memory \u2014 on Windows, Linux and macOS.",
       "status": "planned",
-      "requires": ["stl-dsa", "engineering"],
+      "requires": [
+        "stl-dsa",
+        "engineering"
+      ],
       "lessons": [],
-      "projects": ["Shell", "Job/task system", "Multithreaded application"]
+      "projects": [
+        "Shell",
+        "Job/task system",
+        "Multithreaded application"
+      ]
     },
     {
       "id": "networking",
-      "title": "Track 7 — Networking",
+      "title": "Track 7 \u2014 Networking",
       "description": "Sockets, TCP and UDP, serialization, protocol design, asynchronous I/O and concurrent servers.",
       "status": "planned",
-      "requires": ["systems"],
+      "requires": [
+        "systems"
+      ],
       "lessons": [],
-      "projects": ["HTTP client", "HTTP server", "Game server"]
+      "projects": [
+        "HTTP client",
+        "HTTP server",
+        "Game server"
+      ]
     },
     {
       "id": "graphics",
-      "title": "Track 8 — Graphics: Fundamentals, OpenGL and Vulkan",
+      "title": "Track 8 \u2014 Graphics: Fundamentals, OpenGL and Vulkan",
       "description": "Vectors, matrices, cameras, shaders and meshes; then OpenGL for concepts, then Vulkan where the machinery is explicit.",
       "status": "planned",
-      "requires": ["stl-dsa"],
+      "requires": [
+        "stl-dsa"
+      ],
       "lessons": [],
-      "projects": ["Software rasteriser", "3D rendering engine", "Vulkan renderer"]
+      "projects": [
+        "Software rasteriser",
+        "3D rendering engine",
+        "Vulkan renderer"
+      ]
     },
     {
       "id": "games",
-      "title": "Track 9 — Game Engine and Games",
-      "description": "Entities, components and systems, input, physics, resources and scenes — then cache locality and data-oriented design when 50,000 objects get slow.",
+      "title": "Track 9 \u2014 Game Engine and Games",
+      "description": "Entities, components and systems, input, physics, resources and scenes \u2014 then cache locality and data-oriented design when 50,000 objects get slow.",
       "status": "planned",
-      "requires": ["graphics", "systems"],
+      "requires": [
+        "graphics",
+        "systems"
+      ],
       "lessons": [],
-      "projects": ["2D game engine", "2D game", "3D game", "Multiplayer game"]
+      "projects": [
+        "2D game engine",
+        "2D game",
+        "3D game",
+        "Multiplayer game"
+      ]
     },
     {
       "id": "advanced",
-      "title": "Track 10 — Advanced C++",
+      "title": "Track 10 \u2014 Advanced C++",
       "description": "Templates, type traits, concepts, metaprogramming, allocators, object layout and vtables, exceptions, coroutines, atomics and the memory model, undefined behaviour.",
       "status": "planned",
-      "requires": ["language", "systems"],
+      "requires": [
+        "language",
+        "systems"
+      ],
       "lessons": [],
-      "projects": ["Large production-style application"]
+      "projects": [
+        "Large production-style application"
+      ]
     }
   ]
 }

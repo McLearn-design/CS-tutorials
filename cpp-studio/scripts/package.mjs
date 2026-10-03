@@ -39,6 +39,7 @@ const bundle = (entry, outfile, extra = {}) => build({
   const { scripts, dependencies, devDependencies, ...manifest } = src;
   fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ ...manifest, version, repository }, null, 2));
   fs.copyFileSync(path.join(root, 'README.md'), path.join(dir, 'README.md'));
+  fs.copyFileSync(path.join(root, 'CHANGELOG.md'), path.join(dir, 'CHANGELOG.md'));
   fs.writeFileSync(path.join(dir, '.vscodeignore'), '');
   const vsix = path.join(out, `cpp-studio-${version}.vsix`);
   run(bin('vsce'), ['package', '--no-dependencies', '--skip-license', '--allow-missing-repository', '--out', vsix], dir);
@@ -48,9 +49,10 @@ const bundle = (entry, outfile, extra = {}) => build({
 {
   const dir = stage(path.join(out, 'stage-cli'));
   await bundle('packages/cli/src/main.ts', path.join(dir, 'cli.js'));
+  fs.copyFileSync(path.join(root, 'CHANGELOG.md'), path.join(dir, 'CHANGELOG.md'));
   fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({
     name: 'cpp-studio-cli', version, description: 'Learn C++ by building real software with real tools — terminal edition.',
-    bin: { 'cpp-studio': 'cli.js' }, files: ['cli.js', 'curriculum'], engines: { node: '>=18' }, repository, license: 'MIT',
+    bin: { 'cpp-studio': 'cli.js' }, files: ['cli.js', 'curriculum', 'CHANGELOG.md'], engines: { node: '>=18' }, repository, license: 'MIT',
   }, null, 2));
   run('npm', ['pack', '--pack-destination', out], dir);
 }

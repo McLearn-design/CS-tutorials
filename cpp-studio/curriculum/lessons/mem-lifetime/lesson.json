@@ -1,0 +1,122 @@
+{
+  "id": "mem-lifetime",
+  "title": "Object lifetime: the stack, the heap, and who cleans up",
+  "summary": "Watch objects being born and dying, allocate on the heap with new and delete, catch a use-after-free with AddressSanitizer, and let std::unique_ptr do the cleanup for you.",
+  "mode": "guided",
+  "project": "lifetime",
+  "concepts": ["object lifetime", "scope", "constructor", "destructor", "stack", "heap", "new / delete", "dangling pointer", "use after free", "AddressSanitizer", "ownership", "RAII", "std::unique_ptr"],
+  "prerequisites": ["found-structs"],
+  "intro": "intro.md",
+  "build": {
+    "default": "tracer",
+    "targets": {
+      "tracer": { "system": "direct", "sources": ["tracer.cpp"], "output": "tracer", "sanitize": ["address", "undefined"] },
+      "dangling": { "system": "direct", "sources": ["dangling.cpp"], "output": "dangling", "sanitize": ["address", "undefined"] }
+    }
+  },
+  "files": [{ "path": "tracer.cpp", "from": "starter/tracer.cpp" }],
+  "steps": [
+    {
+      "id": "predict",
+      "title": "Predict the lifetimes",
+      "kind": "quiz",
+      "content": "steps/01-predict.md",
+      "open": ["tracer.cpp"],
+      "commands": ["g++ -std=c++20 -Wall -Wextra tracer.cpp -o tracer && ./tracer"],
+      "quiz": {
+        "question": "Which is the correct order of these lines in the program's output?",
+        "options": [
+          "construct b → construct f-local → destroy b → destroy f-local → construct c",
+          "construct b → construct f-local → destroy f-local → destroy b → construct c",
+          "construct b → construct f-local → construct c → destroy f-local → destroy b",
+          "construct b → construct f-local → construct c → destroy c → destroy b → destroy f-local"
+        ],
+        "answer": 1,
+        "explanations": [
+          "`f-local` lives inside `f`. Its lifetime ends when `f` returns — before control even gets back to the block holding `b`.",
+          "Right. A local object is destroyed at the closing `}` of the block it was declared in. `f-local` dies when `f` returns; `b` dies at the end of its inner `{ }` block — before `c` is even created. And when several objects die at the same `}`, they're destroyed in *reverse* order of construction (`c`, then `a`).",
+          "`c` isn't created until after the inner block has closed — by then `b` is already gone.",
+          "Objects don't wait until the end of `main`. Each local dies at the end of its own scope."
+        ]
+      }
+    },
+    {
+      "id": "heap",
+      "title": "Objects you destroy yourself",
+      "kind": "code",
+      "content": "steps/02-heap.md",
+      "open": ["tracer.cpp"],
+      "checks": [
+        { "type": "source", "path": "tracer.cpp", "pattern": "new\\s+Tracer\\s*[({]", "label": "Creates a Tracer with new" },
+        { "type": "compiles", "noWarnings": true },
+        { "type": "output", "expect": { "containsAll": ["construct c", "construct heap", "destroy heap", "main ends", "destroy c"] }, "label": "The heap Tracer is destroyed before main ends" }
+      ],
+      "hints": [
+        "`Tracer* h = new Tracer(\"heap\");` creates it; `h->name` reaches a member through the pointer.",
+        "`delete h;` destroys it — put it just before the line that prints `main ends`.",
+        "On Linux, if you forget `delete`, LeakSanitizer reports a memory leak when the program exits."
+      ],
+      "solution": "solution/heap"
+    },
+    {
+      "id": "dangling",
+      "title": "A use after free",
+      "kind": "debug",
+      "content": "steps/03-dangling.md",
+      "files": [{ "path": "dangling.cpp", "from": "starter/dangling.cpp" }],
+      "open": ["dangling.cpp"],
+      "commands": ["g++ -std=c++20 -g -fsanitize=address,undefined dangling.cpp -o dangling && ./dangling"],
+      "checks": [
+        { "type": "compiles", "target": "dangling", "noWarnings": true },
+        { "type": "output", "target": "dangling", "expect": { "equals": "Hello, Ada!\nLength: 11" } },
+        { "type": "source", "path": "dangling.cpp", "pattern": "\\bnew\\b|\\bdelete\\b", "negate": true, "label": "dangling.cpp no longer manages memory by hand", "failMessage": "The output is right — but this step asks you to remove the manual new/delete entirely, so the bug can't come back. Return the string by value." }
+      ],
+      "hints": [
+        "Read the sanitizer report: *who* freed the memory (the second stack trace) and *who* used it afterwards (the first).",
+        "The fix isn't to move the `delete` — it's to stop using the heap here. `std::string make_greeting(const std::string& name)` can just `return \"Hello, \" + name + \"!\";`.",
+        "Then `print_and_cleanup` has nothing to clean up: make it `void print(const std::string& text)`."
+      ],
+      "solution": "solution/dangling"
+    },
+    {
+      "id": "ownership",
+      "title": "Who owns it?",
+      "kind": "quiz",
+      "content": "steps/04-ownership.md",
+      "quiz": {
+        "question": "In the original dangling.cpp, what was the root cause of the bug?",
+        "options": [
+          "`new std::string` is slower than a local string.",
+          "Nothing in the code said who *owned* the string. `print_and_cleanup` assumed it did and deleted it; `main` assumed it still could use it. Raw pointers can't express ownership.",
+          "`std::string` can't be allocated on the heap.",
+          "`delete` should have been `delete[]`."
+        ],
+        "answer": 1,
+        "explanations": [
+          "It is slower, but speed wasn't the bug — the program read freed memory.",
+          "Exactly. A raw `T*` says nothing about who must delete it, or when. C++'s answer is to make ownership part of the *type*: values own themselves, `std::unique_ptr<T>` is the single owner of a heap object, and plain references/pointers only *observe*. That's the next step.",
+          "Anything can be heap-allocated. The problem was what happened to it afterwards.",
+          "`delete[]` is for arrays from `new[]`. A single `new std::string` is correctly paired with `delete` — it was just deleted too early for main."
+        ]
+      }
+    },
+    {
+      "id": "unique-ptr",
+      "title": "Let the type clean up: std::unique_ptr",
+      "kind": "code",
+      "content": "steps/05-unique-ptr.md",
+      "open": ["tracer.cpp"],
+      "checks": [
+        { "type": "source", "path": "tracer.cpp", "pattern": "make_unique\\s*<\\s*Tracer\\s*>", "label": "Uses std::make_unique<Tracer>" },
+        { "type": "source", "path": "tracer.cpp", "pattern": "\\bdelete\\b|\\bnew\\s+Tracer", "negate": true, "label": "No manual new/delete left in tracer.cpp" },
+        { "type": "compiles", "noWarnings": true },
+        { "type": "output", "expect": { "containsAll": ["construct heap", "main ends", "destroy heap", "destroy c"] }, "label": "The heap Tracer is destroyed automatically at the end of main" }
+      ],
+      "hints": [
+        "`#include <memory>`, then `std::unique_ptr<Tracer> h = std::make_unique<Tracer>(\"heap\");` (or `auto h = ...`).",
+        "Remove the `delete h;` line — the unique_ptr's destructor does it. Use `h->name` exactly as before."
+      ],
+      "solution": "solution/unique-ptr"
+    }
+  ]
+}

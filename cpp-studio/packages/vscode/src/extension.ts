@@ -1,9 +1,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { BuildResult, CheckReport, detectToolchain, Studio, StudioError, Workspace } from '@cpp-studio/engine';
+import * as os from 'os';
+import { BuildResult, CheckReport, detectToolchain, Studio, StudioError, toolchainGuide, Workspace } from '@cpp-studio/engine';
 import { CurriculumTree } from './curriculumTree';
 import { LessonPanel, PanelMessage } from './lessonPanel';
+import { Updater } from './updates';
 
 let studio: Studio | undefined;
 let tree: CurriculumTree;
@@ -12,6 +14,10 @@ let diagnostics: vscode.DiagnosticCollection;
 let output: vscode.OutputChannel;
 let status: vscode.StatusBarItem;
 let extensionPath: string;
+let context: vscode.ExtensionContext;
+const OPEN_FIRST_LESSON_KEY = 'cppStudio.openFirstLessonIn';
+const WELCOMED_KEY = 'cppStudio.welcomed';
+const WALKTHROUGH_ID = 'cpp-studio.cpp-studio#gettingStarted';
 const terminals = new Map<string, vscode.Terminal>();
 
 function workspaceRoot(): string | undefined {
@@ -216,15 +222,49 @@ async function debug(): Promise<void> {
   await vscode.debug.startDebugging(vscode.workspace.workspaceFolders?.[0], config);
 }
 
+/** Show what was found and how to install what's missing, as a rendered Markdown page. */
 async function doctor(): Promise<void> {
+  const tc = await detectToolchain();
+  const dir = context.globalStorageUri.fsPath;
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, 'toolchain.md');
+  fs.writeFileSync(file, toolchainGuide(tc));
+  await vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(file));
+}
+
+/** Warn once per session if the essentials are missing, with a way to fix it. */
+async function warnIfToolsMissing(): Promise<void> {
   const tc = studio?.toolchain ?? (await detectToolchain());
-  output.clear();
-  output.appendLine('C++ Studio toolchain check');
-  output.appendLine(`compiler: ${tc.compiler ? `${tc.compiler.kind} ${tc.compiler.path}\n          ${tc.compiler.version}` : 'NOT FOUND — install g++, clang++ or Visual Studio Build Tools'}`);
-  output.appendLine(`cmake:    ${tc.cmake ? tc.cmake.version : 'NOT FOUND — install CMake 3.20+'}`);
-  output.appendLine(`debugger: ${tc.debugger ? `${tc.debugger.kind} ${tc.debugger.path}` : 'not found (needed from the debugger lesson on)'}`);
-  output.appendLine(`git:      ${tc.git ? tc.git.path : 'not found'}`);
-  output.show();
+  const missing = [!tc.compiler && 'a C++ compiler', !tc.cmake && 'CMake'].filter(Boolean);
+  if (!missing.length) return;
+  const pick = await vscode.window.showWarningMessage(`C++ Studio couldn't find ${missing.join(' or ')} on this computer.`, 'How to Install');
+  if (pick) await doctor();
+}
+
+/** Pick (or create) a folder for the learner's projects and open it. */
+async function createWorkspace(): Promise<void> {
+  const suggested = path.join(os.homedir(), 'CppStudio');
+  const choice = await vscode.window.showQuickPick([
+    { label: `$(home) ${suggested}`, description: 'recommended', value: 'default' },
+    { label: '$(folder-opened) Choose another folder…', value: 'choose' },
+  ], { title: 'Where should C++ Studio keep your projects and progress?' });
+  if (!choice) return;
+  let folder = suggested;
+  if (choice.value === 'choose') {
+    const picked = await vscode.window.showOpenDialog({ canSelectFolders: true, canSelectFiles: false, canSelectMany: false, openLabel: 'Use This Folder' });
+    if (!picked?.[0]) return;
+    folder = picked[0].fsPath;
+  }
+  fs.mkdirSync(folder, { recursive: true });
+  Workspace.init(folder);
+  if (workspaceRoot() === folder) {
+    await load();
+    const first = studio?.recommended();
+    if (first) await openLesson(first.id);
+    return;
+  }
+  await context.globalState.update(OPEN_FIRST_LESSON_KEY, folder);
+  await vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(folder), { forceNewWindow: false });
 }
 
 function guard(fn: (...args: any[]) => unknown) {
@@ -259,12 +299,14 @@ async function onPanelMessage(m: PanelMessage): Promise<void> {
   }
 }
 
-export async function activate(context: vscode.ExtensionContext): Promise<void> {
+export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
+  context = ctx;
   extensionPath = context.extensionPath;
   output = vscode.window.createOutputChannel('C++ Studio');
   diagnostics = vscode.languages.createDiagnosticCollection('cpp-studio');
   status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 50);
   tree = new CurriculumTree(() => studio);
+  const updater = new Updater(context, output);
   panel = new LessonPanel((m) => void guard(onPanelMessage)(m));
 
   context.subscriptions.push(
@@ -272,7 +314,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.window.registerTreeDataProvider('cppStudio.curriculum', tree),
     vscode.commands.registerCommand('cppStudio.initWorkspace', guard(async () => {
       const root = workspaceRoot();
-      if (!root) { await vscode.commands.executeCommand('vscode.openFolder'); return; }
+      if (!root) { await createWorkspace(); return; }
       Workspace.init(root);
       await load();
       const first = studio?.recommended();
@@ -294,6 +336,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('cppStudio.debug', guard(debug)),
     vscode.commands.registerCommand('cppStudio.openTerminal', guard(() => terminal())),
     vscode.commands.registerCommand('cppStudio.doctor', guard(doctor)),
+    vscode.commands.registerCommand('cppStudio.createWorkspace', guard(createWorkspace)),
+    vscode.commands.registerCommand('cppStudio.checkForUpdates', guard(() => updater.checkNow())),
+    vscode.commands.registerCommand('cppStudio.gettingStarted', guard(() =>
+      vscode.commands.executeCommand('workbench.action.openWalkthrough', WALKTHROUGH_ID, false))),
     vscode.commands.registerCommand('cppStudio.refresh', guard(async () => { studio?.reload(); tree.refresh(); updateStatus(); })),
     vscode.workspace.onDidChangeWorkspaceFolders(() => void load()),
     vscode.workspace.onDidChangeConfiguration((e) => { if (e.affectsConfiguration('cppStudio')) void load(); }),
@@ -302,8 +348,26 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
 
   await load();
-  // Pick up exactly where the learner left off.
-  if (studio?.current()) await render();
+
+  // First run ever: show the getting-started walkthrough.
+  if (!context.globalState.get<boolean>(WELCOMED_KEY)) {
+    await context.globalState.update(WELCOMED_KEY, true);
+    if (!studio) void vscode.commands.executeCommand('workbench.action.openWalkthrough', WALKTHROUGH_ID, false);
+  }
+
+  if (studio) {
+    // We just created this workspace and reopened the window on it: start lesson one.
+    if (context.globalState.get<string>(OPEN_FIRST_LESSON_KEY) === workspaceRoot()) {
+      await context.globalState.update(OPEN_FIRST_LESSON_KEY, undefined);
+      const first = studio.recommended();
+      if (first) await guard(openLesson)(first.id);
+    } else if (studio.current()) {
+      // Pick up exactly where the learner left off.
+      await render();
+    }
+    void warnIfToolsMissing();
+  }
+  void updater.checkInBackground();
 }
 
 export function deactivate(): void {

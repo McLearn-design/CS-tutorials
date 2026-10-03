@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { test } from 'node:test';
+import { Workspace } from '../workspace';
+import { compareVersions, GitHubRelease, pickUpdate } from '../updates';
 import { coachDiagnostics, parseDiagnostics } from '../diagnostics';
 import { stripSource } from '../source';
 import { parseTestOutput } from '../testing';
@@ -63,4 +68,34 @@ test('parses test output', () => {
   assert.deepEqual(s.passedNames, ['a', 'c']);
   assert.equal(s.failures[0].name, 'b');
   assert.match(s.failures[0].details, /CHECK_EQ/);
+});
+
+test('files copied into a project get a fresh modification time (macOS keeps the old one)', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cpp-studio-mtime-'));
+  const lessonDir = path.join(tmp, 'lesson');
+  fs.mkdirSync(lessonDir);
+  const src = path.join(lessonDir, 'main.cpp');
+  fs.writeFileSync(src, 'int main() {}\n');
+  const old = new Date('2001-01-01T00:00:00Z');
+  fs.utimesSync(src, old, old);
+  const ws = Workspace.init(path.join(tmp, 'ws'));
+  ws.applyFiles(tmp, lessonDir, 'p', [{ path: 'main.cpp', from: 'main.cpp' }]);
+  const copied = fs.statSync(path.join(ws.projectDir('p'), 'main.cpp')).mtimeMs;
+  assert.ok(Date.now() - copied < 60_000, 'copied file kept its old timestamp');
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('picks the newest newer release with a matching asset', () => {
+  const rel = (tag: string, extra: Partial<GitHubRelease> = {}): GitHubRelease => ({
+    tag_name: tag, html_url: `https://x/${tag}`, draft: false, prerelease: false,
+    assets: [{ name: `cpp-studio-${tag.replace('cpp-studio-v', '')}.vsix`, browser_download_url: `https://dl/${tag}.vsix` }], ...extra,
+  });
+  const releases = [rel('cpp-studio-v0.2.0'), rel('cpp-studio-v0.10.0'), rel('cpp-studio-v0.11.0', { draft: true }),
+    rel('cpp-studio-v0.12.0-beta.1', { prerelease: true }), rel('other-v9.0.0')];
+  assert.equal(pickUpdate(releases, '0.2.0', { assetPattern: /\.vsix$/ })?.version, '0.10.0');
+  assert.equal(pickUpdate(releases, '0.10.0', { assetPattern: /\.vsix$/ }), undefined);
+  assert.equal(pickUpdate(releases, '0.10.0', { assetPattern: /\.vsix$/, includePrereleases: true })?.version, '0.12.0-beta.1');
+  assert.equal(pickUpdate(releases, '0.1.0', { assetPattern: /\.vsix$/ })?.assetUrl, 'https://dl/cpp-studio-v0.10.0.vsix');
+  assert.equal(compareVersions('1.0.0-rc.1', '1.0.0'), -1);
+  assert.equal(compareVersions('v0.9.9', '0.10'), -1);
 });
